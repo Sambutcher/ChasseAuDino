@@ -63,17 +63,6 @@ export function zoneDetection(cible, ecranW, ecranH, ratio, cycle) {
   return { x: 0, y: 0, w: ecranW, h: ecranH, type: 'vue' };
 }
 
-// Rectangle de la vidéo correspondant à une zone de l'écran, pour un cadrage donné.
-export function zoneVersSource(zone, c, ecranW, ecranH) {
-  const kx = c.sw / ecranW;
-  const ky = c.sh / ecranH;
-  return { sx: c.sx + zone.x * kx, sy: c.sy + zone.y * ky, sw: zone.w * kx, sh: zone.h * ky };
-}
-
-export function dansRect(point, r) {
-  return point.x >= r.x && point.x <= r.x + r.w && point.y >= r.y && point.y <= r.y + r.h;
-}
-
 // Où dessiner la vidéo ENTIÈRE (drawImage(video, x, y, w, h)) pour que la zone `zone` de l'écran
 // remplisse le rectangle `cible` d'un canvas, pour un cadrage `c` calculé sur la taille annoncée
 // vw×vh. Sans découpe de la source, le navigateur étire l'image réellement reçue : juste après
@@ -89,23 +78,6 @@ export function placementVideo(c, vw, vh, ecranW, ecranH, zone, cible) {
     y: cible.y + (-c.sy * ky - zone.y) * sy,
     w: vw * kx * sx,
     h: vh * ky * sy,
-  };
-}
-
-// Rectangle source `src` (pixels vidéo) à dessiner sur une destination dw×dh, rogné aux bords de
-// la vidéo (vw×vh) : renvoie les arguments de drawImage pour la partie visible, ou null.
-// Safari dessine mal une source qui déborde de l'image.
-export function rogner(src, vw, vh, dw, dh) {
-  const kx = dw / src.sw;
-  const ky = dh / src.sh;
-  const x0 = Math.max(src.sx, 0);
-  const y0 = Math.max(src.sy, 0);
-  const x1 = Math.min(src.sx + src.sw, vw);
-  const y1 = Math.min(src.sy + src.sh, vh);
-  if (x1 <= x0 || y1 <= y0) return null;
-  return {
-    sx: x0, sy: y0, sw: x1 - x0, sh: y1 - y0,
-    dx: (x0 - src.sx) * kx, dy: (y0 - src.sy) * ky, dw: (x1 - x0) * kx, dh: (y1 - y0) * ky,
   };
 }
 

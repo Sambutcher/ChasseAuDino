@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, dansRect, lisserVers, rogner, placementVideo } from '../js/geometry.js';
+import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, lisserVers, placementVideo } from '../js/geometry.js';
 
 test('cadrage couvre l\'écran puis zoome au centre', () => {
   // Vidéo portrait 720×1280 sur écran 375×667 : même ratio ≈, zoom 2 → moitié centrale.
@@ -51,24 +51,12 @@ test('zoneDetection : sans cible, alternance vue entière / centre', () => {
   assert.ok(Math.abs(c.x + c.w / 2 - 187.5) < 1e-9);
 });
 
-test('aller-retour zone écran → vidéo → entrée modèle → écran', () => {
-  const c = cadrage(1080, 1920, 375, 667, 2);
+test('aller-retour zone écran → entrée modèle → écran', () => {
   const zone = zoneDetection({ x: 200, y: 250, w: 12, h: 30 }, 375, 667, 224 / 384, 0);
-  const src = zoneVersSource(zone, c, 375, 667);
-  const lb = letterbox(src.sw, src.sh, 224, 384);
+  const lb = letterbox(zone.w, zone.h, 224, 384);
   // Une boîte occupant toute l'image placée dans l'entrée revient exactement sur la zone.
   const e = versEcran({ x: lb.dx, y: lb.dy, w: lb.dw, h: lb.dh }, lb, zone.w, zone.h);
   for (const [a, b] of [[e.x, 0], [e.y, 0], [e.w, zone.w], [e.h, zone.h]]) assert.ok(Math.abs(a - b) < 1e-9);
-  // Source à l'intérieur du cadrage vidéo.
-  assert.ok(src.sx >= c.sx - 1e-9 && src.sx + src.sw <= c.sx + c.sw + 1e-9);
-});
-
-test('dansRect', () => {
-  const r = { x: 7, y: 17, w: 26, h: 66 };
-  assert.ok(dansRect({ x: 7, y: 17 }, r));
-  assert.ok(dansRect({ x: 20, y: 50 }, r));
-  assert.ok(!dansRect({ x: 33.5, y: 50 }, r));
-  assert.ok(!dansRect({ x: 20, y: 16 }, r));
 });
 
 test('placementVideo : la zone voulue de l\'écran tombe exactement sur la cible', () => {
@@ -86,15 +74,6 @@ test('placementVideo : la zone voulue de l\'écran tombe exactement sur la cible
   // Cible décalée (letterbox) : simple translation.
   const q = placementVideo(c, 720, 1280, 360, 640, ecran, { x: 10, y: 20, w: 360, h: 640 });
   assert.deepEqual([q.x, q.y], [-170, -300]);
-});
-
-test('rogner : partie visible d\'une source qui déborde de la vidéo', () => {
-  // Source 100×100 dont le quart haut-gauche sort de la vidéo, vers une destination 200×200.
-  assert.deepEqual(rogner({ sx: -50, sy: -50, sw: 100, sh: 100 }, 640, 480, 200, 200),
-    { sx: 0, sy: 0, sw: 50, sh: 50, dx: 100, dy: 100, dw: 100, dh: 100 });
-  assert.deepEqual(rogner({ sx: 10, sy: 10, sw: 20, sh: 20 }, 640, 480, 40, 40),
-    { sx: 10, sy: 10, sw: 20, sh: 20, dx: 0, dy: 0, dw: 40, dh: 40 });
-  assert.equal(rogner({ sx: 700, sy: 0, sw: 50, sh: 50 }, 640, 480, 10, 10), null);
 });
 
 test('lisserVers : indépendant de la cadence, 63 % de l\'écart au bout de tau', () => {

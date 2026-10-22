@@ -55,13 +55,18 @@ node --test tests/          # tests unitaires (Node ≥ 18, aucune dépendance)
 python3 tools/serve.py      # HTTPS sur https://<ip-du-pc>:8443 (certificat auto-signé)
 ```
 
-
 Sur l'iPhone, ouvrir l'adresse affichée et accepter le certificat. Le mode hors ligne (service
 worker) ne se teste que sur GitHub Pages : en dev (adresse IP ou localhost), la page n'enregistre
 pas de service worker et désinstalle ceux qui traînent, car leurs requêtes échouent avec le
 certificat auto-signé. Si une page de dev affiche « FetchEvent.respondWith received an error »,
 un ancien service worker (par exemple celui de Street Biathlon, servi à la même adresse) est
 resté : Réglages → Apps → Safari → Avancé → Données des sites web → supprimer 192.168.1.147.
+Pour tester la version en ligne sans être gêné par le cache hors ligne, utiliser la navigation
+privée.
+
+La mémoire graphique de l'iPhone SE est juste suffisante (détection TF.js + créatures three.js) :
+textures TF.js libérées aussitôt, créatures sans anticrénelage ; si iOS retire malgré tout un
+contexte WebGL, le jeu affiche « Mémoire saturée, redémarrage… » et se recharge.
 
 | Fichier | Rôle |
 |---|---|
@@ -70,20 +75,21 @@ resté : Réglages → Apps → Safari → Avancé → Données des sites web �
 | `js/couleur.js` | couleur d'une voiture d'après sa carrosserie (pur, testé) |
 | `js/creatures.js` | créatures three.js : placement, mimiques, licorne, explosion, fuite, test de touche |
 | `js/sons.js` | bruitages Web Audio synthétisés |
-| `js/camera.js` | caméra arrière |
+| `js/camera.js` | caméra arrière, relance de la lecture au retour sur la page |
 | `js/detector.js` | YOLO11n via TensorFlow.js : décodage des 6 classes (voiture, 5 animaux), NMS |
 | `js/flow.js` | flux optique : la créature suit l'image entre deux détections (pur, testé) |
 | `js/tracker.js` | suivi de l'animal, hystérésis, espèce de la première vue (pur, testé) |
 | `js/game.js` | état du jeu : phases course/tir, cartouche unique, issue (pur, testé) |
 | `js/course.js` | distance à vol d'oiseau, départ, déblocage du tir (pur, testé) |
 | `js/position.js` | GPS (`watchPosition`), écran maintenu allumé |
-| `js/geometry.js` | cadrage, letterbox, zones de détection (pur, testé) |
+| `js/geometry.js` | cadrage, letterbox, zones de détection, placement de la vidéo, lissage (pur, testé) |
 | `js/render.js` | dessin 2D : vidéo, viseur, cartouche, messages, écran de course |
 | `sw.js` | cache hors ligne |
 
 **À chaque mise en ligne, changer `VERSION` dans `sw.js` et `index.html`** (`node --test tests/`
-le vérifie, ainsi que la présence de chaque fichier dans le cache hors ligne), merger dans `main`,
-puis créer la release (`gh release create vX.Y.Z`).
+le vérifie, ainsi que la présence de chaque fichier dans le cache hors ligne), puis pousser sur
+`v1-stable-sans-posture` : GitHub Pages republie aussitôt, et les téléphones passent à la nouvelle
+version à leur prochaine ouverture.
 
 ## Modèles
 

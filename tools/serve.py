@@ -32,7 +32,7 @@ def certificat(ip):
     if not cert.exists():
         subprocess.run(
             ["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "825",
-             "-keyout", str(cle), "-out", str(cert), "-subj", "/CN=street-biathlon-dev",
+             "-keyout", str(cle), "-out", str(cert), "-subj", "/CN=chasse-aux-betes-dev",
              "-addext", f"subjectAltName=IP:{ip},IP:127.0.0.1,DNS:localhost"],
             check=True, capture_output=True,
         )
