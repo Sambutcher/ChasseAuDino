@@ -46,7 +46,16 @@ if ('serviceWorker' in navigator) {
   if (DEV) {
     navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
   } else {
-    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker :', e));
+    // Mise à jour : sw.js jamais pris dans le cache HTTP (GitHub Pages le garde 10 min), vérifié à
+    // chaque ouverture ; quand une nouvelle version prend la main, la page se recharge pour
+    // l'afficher (sinon l'ancienne restait jusqu'au rechargement suivant).
+    const dejaControlee = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (dejaControlee) location.reload();
+    });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then((r) => r.update())
+      .catch((e) => console.warn('Service worker :', e));
   }
 }
 
