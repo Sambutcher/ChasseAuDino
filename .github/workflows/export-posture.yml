@@ -20,7 +20,7 @@ jobs:
       - name: Installer onnx2tf, ONNX Runtime et tensorflowjs
         run: |
           pip install "tensorflow==2.17.1" "tf_keras==2.17.0" "onnx==1.16.1" "onnxruntime==1.18.1" \
-            "onnx2tf==1.25.7" onnx_graphsurgeon sng4onnx psutil "tensorflowjs==4.22.0" numpy pillow
+            "onnx2tf==1.25.7" onnxsim onnx_graphsurgeon sng4onnx psutil "tensorflowjs==4.22.0" numpy pillow
       - name: Télécharger le modèle ONNX
         timeout-minutes: 5
         run: tools/export_posture.sh onnx

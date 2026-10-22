@@ -19,12 +19,14 @@ case "$1" in
   onnx)
     curl -sfLo rtm.zip "$URL"
     unzip -qo rtm.zip
-    cp ./*/rtmpose_onnx/*/end2end.onnx rtmpose.onnx
+    cp ./*/rtmpose_onnx/*/end2end.onnx rtmpose-dynamique.onnx
+    # Taille d'entrée figée et graphe simplifié : avec un lot dynamique, onnx2tf se bloque.
+    onnxsim rtmpose-dynamique.onnx rtmpose.onnx --overwrite-input-shape input:1,3,256,256
     ls -la rtmpose.onnx
     ;;
   tf)
     # Lot fixé à 1, noms de sorties conservés (simcc_x, simcc_y) dans la signature.
-    onnx2tf -i rtmpose.onnx -o saved_model -ois input:1,3,256,256 -osd
+    onnx2tf -i rtmpose.onnx -o saved_model -b 1 -osd
     ls -la saved_model
     ;;
   reference)
