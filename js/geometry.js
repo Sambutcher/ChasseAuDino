@@ -73,3 +73,9 @@ export function zoneVersSource(zone, c, ecranW, ecranH) {
 export function dansRect(point, r) {
   return point.x >= r.x && point.x <= r.x + r.w && point.y >= r.y && point.y <= r.y + r.h;
 }
+
+// Lissage exponentiel indépendant de la cadence : après `dt` secondes, la valeur a parcouru
+// 1 − e^(−dt/tau) de l'écart vers la cible (63 % au bout de tau).
+export function lisserVers(actuelle, cible, dt, tau) {
+  return actuelle + (cible - actuelle) * (1 - Math.exp(-dt / tau));
+}

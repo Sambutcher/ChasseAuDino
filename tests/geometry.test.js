@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, dansRect } from '../js/geometry.js';
+import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, dansRect, lisserVers } from '../js/geometry.js';
 
 test('cadrage couvre l\'écran puis zoome au centre', () => {
   // Vidéo portrait 720×1280 sur écran 375×667 : même ratio ≈, zoom 2 → moitié centrale.
@@ -69,4 +69,14 @@ test('dansRect', () => {
   assert.ok(dansRect({ x: 20, y: 50 }, r));
   assert.ok(!dansRect({ x: 33.5, y: 50 }, r));
   assert.ok(!dansRect({ x: 20, y: 16 }, r));
+});
+
+test('lisserVers : indépendant de la cadence, 63 % de l\'écart au bout de tau', () => {
+  assert.ok(Math.abs(lisserVers(0, 100, 0.1, 0.1) - 63.2) < 0.1);
+  let v = 0;
+  for (let i = 0; i < 6; i++) v = lisserVers(v, 100, 1 / 60, 0.1); // 6 images à 60 i/s
+  let w = 0;
+  for (let i = 0; i < 3; i++) w = lisserVers(w, 100, 1 / 30, 0.1); // 3 images à 30 i/s
+  assert.ok(Math.abs(v - w) < 1e-9);
+  assert.equal(lisserVers(42, 100, 0, 0.1), 42);
 });

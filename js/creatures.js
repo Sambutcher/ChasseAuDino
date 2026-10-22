@@ -4,8 +4,14 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { ESPECES, trouverClip } from './especes.js';
+import { lisserVers } from './geometry.js';
 
 export const DUREE_EXPLOSION = 1.8; // s
+// Lissage de l'affichage : la boîte suivie avance par à-coups (flux optique en pixels entiers
+// d'une image réduite, recalages des détections), la créature la suit en douceur.
+const TAU_POSITION = 0.12; // s
+const TAU_TAILLE = 0.3; // s
+const SAUT = 1.5; // écart (en hauteurs de créature) au-delà duquel on se recale d'un coup
 const TRIANGLES_PAR_ECLAT = 4;
 const TOLERANCE_TIR = 8; // px : un tir qui frôle la silhouette compte
 const VITESSE_FUITE = 1.2; // largeurs d'écran par seconde
@@ -58,12 +64,14 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   let fuite = null; // { sens, delai }
   let explosion = null;
   let aEffacer = false; // une image vide reste à rendre
+  let affiche = null; // { x, y, s, t } : placement lissé de la créature courante
 
   function choisir(classe, t) {
     const m = modeles[classe];
     if (!m || m === courante) return m;
     cacher();
     courante = m;
+    affiche = null;
     m.pivot.visible = true;
     m.attente?.reset().play();
     prochaineHumeur = t + delaiHumeur(m.espece);
@@ -82,9 +90,20 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     s = Math.max(40, Math.min(s, (boite.w * 1.6) / m.ratio));
     const x = boite.x + boite.w / 2;
     const y = vol ? boite.y + boite.h / 2 : boite.y + boite.h;
-    m.pivot.position.set(x, -y, 0);
-    m.pivot.scale.setScalar(s);
-    const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - x) / (largeur / 2)));
+    if (!affiche || Math.hypot(x - affiche.x, y - affiche.y) > affiche.s * SAUT) {
+      affiche = { x, y, s, t };
+    } else {
+      const dt = Math.min(0.1, Math.max(0, (t - affiche.t) / 1000));
+      affiche = {
+        x: lisserVers(affiche.x, x, dt, TAU_POSITION),
+        y: lisserVers(affiche.y, y, dt, TAU_POSITION),
+        s: lisserVers(affiche.s, s, dt, TAU_TAILLE),
+        t,
+      };
+    }
+    m.pivot.position.set(affiche.x, -affiche.y, 0);
+    m.pivot.scale.setScalar(affiche.s);
+    const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - affiche.x) / (largeur / 2)));
     m.pivot.rotation.set(0.12, 0.6 * versCentre, 0);
   }
 
@@ -100,6 +119,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
       explosion = null;
     }
     fuite = null;
+    affiche = null;
     mode = 'cache';
   }
 
