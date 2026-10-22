@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { POINTS, decoderSimcc, sortiesSimcc, orientation, combiner, decoupeCarree } from '../js/posture.js';
+import { POINTS, decoderSimcc, versNchw, orientation, combiner, decoupeCarree } from '../js/posture.js';
 
 // 17 points AP-10K, tous invisibles sauf ceux donnés ({ nom: [x, y] }).
 function points(visibles) {
@@ -17,11 +17,14 @@ test('decoderSimcc : maximum de chaque distribution / 2, confiance = plus petit 
     [[2.5, 1, 0.7], [0.5, 3.5, 0.4]]);
 });
 
-test('sortiesSimcc : sorties reconnues à leur nom, sinon dans l\'ordre', () => {
-  const m = { outputs: [{ name: 'simcc_y' }, { name: 'simcc_x' }] };
-  assert.deepEqual(sortiesSimcc(m, ['Y', 'X']), ['X', 'Y']);
-  assert.deepEqual(sortiesSimcc({ outputs: [{ name: 'output_1' }, { name: 'output_0' }] }, ['Y', 'X']), ['X', 'Y']);
-  assert.deepEqual(sortiesSimcc({ outputs: [{ name: 'Identity' }, { name: 'Identity_1' }] }, ['A', 'B']), ['A', 'B']);
+test('versNchw : RGBA → plans R, G, B normalisés comme MMPose', () => {
+  // Image 2×2 : pixel rouge pur, pixel gris moyen, deux pixels noirs.
+  const n = versNchw(new Uint8ClampedArray([255, 0, 0, 255, 124, 116, 104, 255, 0, 0, 0, 255, 0, 0, 0, 255]), 2);
+  assert.ok(n instanceof Float32Array);
+  assert.equal(n.length, 12);
+  assert.ok(Math.abs(n[0] - (255 - 123.675) / 58.395) < 1e-6, 'R du 1er pixel, plan R');
+  assert.ok(Math.abs(n[4] - (0 - 116.28) / 57.12) < 1e-6, 'G du 1er pixel, plan G');
+  assert.ok(Math.abs(n[9] - (104 - 103.53) / 57.375) < 1e-6, 'B du 2e pixel, plan B');
 });
 
 test('orientation : chien de profil regardant à gauche, puis à droite', () => {

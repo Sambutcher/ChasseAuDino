@@ -1,7 +1,7 @@
-// Posture des animaux avec RTMPose-m (AP-10K, 17 points clés), export TensorFlow.js.
-// Interface : chargerPosture(url) puis estimer(source, decoupe) → 17 points {x, y, score} dans le
-// repère de la découpe (0–taille). `tf` est le global chargé par vendor/tf.min.js.
-// decoderSimcc, sortiesSimcc et orientation sont purs (testés sous Node).
+// Posture des animaux avec RTMPose-m (AP-10K, 17 points clés), dans ONNX Runtime Web
+// (WebAssembly, processeur) exécuté par un Web Worker (js/posture-worker.js).
+// Interface : chargerPosture(url) puis estimer(canvas) → 17 points {x, y, score} dans le repère
+// de la découpe (0–TAILLE). versNchw, decoderSimcc et orientation sont purs (testés sous Node).
 
 // Points clés AP-10K, dans l'ordre des sorties du modèle.
 export const POINTS = [
@@ -12,18 +12,28 @@ const I = Object.fromEntries(POINTS.map((p, i) => [p, i]));
 const MOYENNE = [123.675, 116.28, 103.53];
 const ECART = [58.395, 57.12, 57.375];
 const DIVISION_SIMCC = 2; // 2 cases SimCC par pixel d'entrée
+export const TAILLE = 256; // entrée du modèle : TAILLE×TAILLE
 export const AGRANDISSEMENT = 1.25; // marge autour du rectangle de l'animal, comme MMPose
 export const SEUIL_POINT = 0.3;
 
-let modele = null;
-let taille = 256;
+let travailleur = null;
+const enAttente = new Map(); // id → { ok, ko } des estimations en cours
+let prochainId = 0;
 
-export async function chargerPosture(url) {
-  modele = await tf.loadGraphModel(url);
-  taille = modele.inputs[0].shape[1];
-  // Première inférence à vide : compile les shaders WebGL avant la partie.
-  tf.tidy(() => modele.execute(tf.zeros([1, taille, taille, 3])));
-  return { taille };
+export function chargerPosture(url) {
+  return new Promise((ok, ko) => {
+    travailleur = new Worker(new URL('./posture-worker.js', import.meta.url), { type: 'module' });
+    travailleur.onerror = (e) => ko(new Error(e.message || 'worker de posture'));
+    travailleur.onmessage = ({ data }) => {
+      if (data.type === 'pret') return ok({ taille: TAILLE });
+      const attente = enAttente.get(data.id);
+      if (!attente) return ko(new Error(data.message)); // échec du chargement
+      enAttente.delete(data.id);
+      if (data.type === 'erreur') attente.ko(new Error(data.message));
+      else attente.ok(decoderSimcc(data.x, data.y, POINTS.length, data.n));
+    };
+    travailleur.postMessage({ type: 'charger', url: new URL(url, location.href).href });
+  });
 }
 
 // Découpe carrée centrée sur le rectangle de l'animal, agrandie de la marge MMPose.
@@ -32,28 +42,25 @@ export function decoupeCarree(boite) {
   return { x: boite.x + boite.w / 2 - cote / 2, y: boite.y + boite.h / 2 - cote / 2, w: cote, h: cote };
 }
 
-// canvas : la découpe déjà dessinée à la taille d'entrée du modèle.
-export async function estimer(canvas) {
-  const sorties = tf.tidy(() => {
-    const image = tf.browser.fromPixels(canvas).toFloat().sub(MOYENNE).div(ECART).expandDims(0);
-    return modele.execute(image);
+// canvas : la découpe déjà dessinée en TAILLE×TAILLE.
+export function estimer(canvas) {
+  const { data } = canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, TAILLE, TAILLE);
+  const donnees = versNchw(data, TAILLE);
+  const id = prochainId++;
+  return new Promise((ok, ko) => {
+    enAttente.set(id, { ok, ko });
+    travailleur.postMessage({ type: 'estimer', id, donnees }, [donnees.buffer]);
   });
-  const [sx, sy] = sortiesSimcc(modele, sorties);
-  const n = sx.shape[2];
-  const [dx, dy] = await Promise.all([sx.data(), sy.data()]);
-  tf.dispose(sorties);
-  return decoderSimcc(dx, dy, POINTS.length, n);
 }
 
-export const tailleEntree = () => taille;
-
-// Sorties [x, y] reconnues à leur nom (simcc_x, simcc_y, ou output_0, output_1 après onnx2tf qui
-// garde l'ordre ONNX), sinon dans l'ordre du modèle. Vérifié par tools/check_posture.mjs.
-export function sortiesSimcc(m, sorties) {
-  const noms = m.outputs.map((o) => o.name);
-  const ix = noms.findIndex((n) => /simcc_x|output_0/.test(n));
-  const iy = noms.findIndex((n) => /simcc_y|output_1/.test(n));
-  return ix >= 0 && iy >= 0 ? [sorties[ix], sorties[iy]] : sorties;
+// Pixels RGBA (ImageData.data) → tenseur NCHW 1×3×taille×taille normalisé comme MMPose.
+export function versNchw(rgba, taille) {
+  const plan = taille * taille;
+  const sortie = new Float32Array(3 * plan);
+  for (let i = 0; i < plan; i++) {
+    for (let c = 0; c < 3; c++) sortie[c * plan + i] = (rgba[i * 4 + c] - MOYENNE[c]) / ECART[c];
+  }
+  return sortie;
 }
 
 // SimCC : pour chaque point, une distribution sur n cases en x et en y ; position = case du

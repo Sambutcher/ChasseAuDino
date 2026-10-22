@@ -19,7 +19,7 @@ import { nouvelEtat, debloquerTir, finSerie, serieTerminee, voirCreature, quitte
 import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, placementVideo } from './geometry.js';
 
 const URL_MODELE = 'models/yolo11n/model.json';
-const URL_POSTURE = 'models/rtmpose-ap10k/model.json';
+const URL_POSTURE = 'models/rtmpose-onnx/rtmpose-int8.onnx';
 const INTERVALLE_POSTURE_MS = 330; // l'orientation change lentement : ~3 estimations par seconde
 const HISTORIQUE_POSTURE = 3; // estimations combinées pour l'orientation affichée
 const VOTES_COULEUR = 5; // images analysées avant de choisir le personnage d'une voiture
@@ -136,7 +136,7 @@ function lancerPartie(entree, creatures) {
         etatPosture = 'absente';
       });
   }
-  const ctxPosture = canvasPosture.getContext('2d');
+  const ctxPosture = canvasPosture.getContext('2d', { willReadFrequently: true });
   let postureEnCours = false;
   let dernierePosture = 0;
   let historiquePosture = []; // dernières orientations fiables { sens, profil }

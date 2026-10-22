@@ -29,8 +29,10 @@ Les créatures kawaii sautillent, font coucou et explosent en étoiles colorées
 grognent, ont les yeux rouges et explosent en flammes et fumée.
 
 **Orientation** : la posture des animaux (yeux, nez, base de la queue…) est lue par un second
-modèle, RTMPose, environ trois fois par seconde ; à défaut (voitures, modèle absent, posture
-illisible), la forme du rectangle dit profil ou face et la créature regarde vers le centre.
+modèle, RTMPose, environ trois fois par seconde, sur le processeur (WebAssembly, dans un Web
+Worker : en WebGL il saturait la mémoire graphique de l'iPhone SE) ; il se charge pendant la
+première course. À défaut (voitures, modèle pas encore chargé, posture illisible, `?sansposture`),
+la forme du rectangle dit profil ou face et la créature regarde vers le centre.
 
 PWA installable, jouable **hors ligne**, pensée d'abord pour iPhone (iPhone SE 3ᵉ gén.).
 Inspirée de [Street Biathlon](https://github.com/Sambutcher/StreetBiathlon), dont elle reprend le socle.
@@ -83,6 +85,7 @@ resté : Réglages → Apps → Safari → Avancé → Données des sites web �
 | `js/especes.js` | bestiaire : cible COCO → créature, couleur → personnage, orientation (pur, testé) |
 | `js/couleur.js` | couleur d'une voiture d'après sa carrosserie (pur, testé) |
 | `js/posture.js` | posture RTMPose : points clés, sens du regard, profil (décodage pur, testé) |
+| `js/posture-worker.js` | Web Worker : RTMPose dans ONNX Runtime Web (WebAssembly) |
 | `js/creatures.js` | créatures three.js : placement, orientation, mimiques, licorne, explosion, fuite, test de touche |
 | `js/sons.js` | bruitages Web Audio synthétisés |
 | `js/camera.js` | caméra arrière |
@@ -105,10 +108,12 @@ puis créer la release (`gh release create vX.Y.Z`).
 - Détection : `models/yolo11n/`, YOLO11n (COCO) converti en TensorFlow.js, entrée 224×384,
   repris de Street Biathlon. Classes utilisées : voiture 2, chat 15, chien 16, cheval 17,
   mouton 18, vache 19.
-- Posture : `models/rtmpose-ap10k/`, RTMPose-m (MMPose) entraîné sur AP-10K (17 points clés
-  animaux), converti en TensorFlow.js float16 par le workflow manuel « Export du modèle de
-  posture » (`gh workflow run export-posture.yml -R Sambutcher/ChasseAuDino --ref <branche>`),
-  contrôlé contre ONNX Runtime ; copier l'artefact dans `models/`. Sans lui, le jeu marche
+- Posture : `models/rtmpose-onnx/rtmpose-int8.onnx` (13,7 Mo), RTMPose-m (MMPose) entraîné sur
+  AP-10K (17 points clés animaux), figé en 1×3×256×256 et poids quantifiés en int8 (1 px d'écart
+  avec float32) par le workflow manuel « Export du modèle de posture »
+  (`gh workflow run export-posture.yml -R Sambutcher/ChasseAuDino --ref <branche>`) ; copier
+  l'artefact dans `models/`. Exécuté par ONNX Runtime Web 1.20.1 (`vendor/onnxruntime/`,
+  WebAssembly, un seul thread) dans `js/posture-worker.js`. Sans lui, le jeu marche
   (orientation par la forme du rectangle).
 - Créatures : `models/creatures/*.glb`, low-poly animés. Les personnages KayKit sont allégés
   (7 animations, un équipement) par `python3 tools/alleger_kaykit.py <dossier des .glb KayKit>`.
@@ -119,6 +124,7 @@ puis créer la release (`gh release create vX.Y.Z`).
 - Chasse au dino : **AGPL-3.0** (voir `LICENSE`), imposée par le modèle de détection.
 - YOLO11n © Ultralytics, AGPL-3.0.
 - TensorFlow.js 4.22.0 (`vendor/tf.min.js`), Apache-2.0.
+- ONNX Runtime Web 1.20.1 (`vendor/onnxruntime/`), © Microsoft, MIT (`vendor/onnxruntime/LICENSE.txt`).
 - three.js 0.170.0 (`vendor/three.module.min.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`), MIT
   (`vendor/three-LICENSE.txt`).
 - Créatures par [Quaternius](https://quaternius.com), domaine public (CC0), via

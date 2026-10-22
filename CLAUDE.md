@@ -9,7 +9,10 @@
 - Voitures (COCO 2) → héros / squelettes KayKit (CC0) selon la couleur de la carrosserie
   (`js/couleur.js`, `PERSONNAGES_VOITURE`) ; modèles allégés par `tools/alleger_kaykit.py`.
 - Orientation (profil/face, regard gauche/droite) : posture RTMPose AP-10K des animaux
-  (`js/posture.js`, modèle `models/rtmpose-ap10k/` converti par le workflow `export-posture.yml`),
+  (`js/posture.js`, modèle ONNX int8 `models/rtmpose-onnx/` préparé par le workflow
+  `export-posture.yml`, exécuté par ONNX Runtime Web en WebAssembly dans `js/posture-worker.js` :
+  **pas en WebGL**, RTMPose y saturait la mémoire graphique de l'iPhone SE ; chargé pendant la
+  1re course, `?sansposture` pour s'en passer),
   sinon forme du rectangle et regard vers le centre ; pas de modèle d'orientation pour les voitures
   (aucun libre et léger trouvé). Espèces désignées par une clé (`'vache'`, `'mage'`…).
 - Animaux COCO détectés par le YOLO11n existant (aucun réentraînement), remplacés par une créature 3D

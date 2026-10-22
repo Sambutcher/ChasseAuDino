@@ -101,10 +101,10 @@
     echantillon.width = 32;
     echantillon.height = 12;
     const ctxEchantillon = echantillon.getContext('2d', { willReadFrequently: true });
-    const posture = await chargerPosture('../models/rtmpose-ap10k/model.json').catch(() => null);
+    const posture = await chargerPosture('../models/rtmpose-onnx/rtmpose-int8.onnx').catch(() => null);
     const decoupe = document.createElement('canvas');
     decoupe.width = decoupe.height = posture ? posture.taille : 1;
-    const ctxDecoupe = decoupe.getContext('2d');
+    const ctxDecoupe = decoupe.getContext('2d', { willReadFrequently: true });
 
     function dessinerZone(ctxCible, img, zone) {
       const { width: w, height: h } = ctxCible.canvas;
