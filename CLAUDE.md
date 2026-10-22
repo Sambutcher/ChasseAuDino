@@ -6,6 +6,12 @@
   Ne pas introduire de bundler ni de framework. Licence AGPL-3.0.
 - Partie = course (100 m à vol d'oiseau au GPS, caméra éteinte) → « Position de tir » → **une seule
   cartouche** : la créature touchée explose, ratée elle s'enfuit → course… `?simgps`, `?debug`.
+- Voitures (COCO 2) → héros / squelettes KayKit (CC0) selon la couleur de la carrosserie
+  (`js/couleur.js`, `PERSONNAGES_VOITURE`) ; modèles allégés par `tools/alleger_kaykit.py`.
+- Orientation (profil/face, regard gauche/droite) : posture RTMPose AP-10K des animaux
+  (`js/posture.js`, modèle `models/rtmpose-ap10k/` converti par le workflow `export-posture.yml`),
+  sinon forme du rectangle et regard vers le centre ; pas de modèle d'orientation pour les voitures
+  (aucun libre et léger trouvé). Espèces désignées par une clé (`'vache'`, `'mage'`…).
 - Animaux COCO détectés par le YOLO11n existant (aucun réentraînement), remplacés par une créature 3D
   (table `ESPECES` de `js/especes.js`) : chat→lapin, vache→dinosaure, cheval→licorne (kawaii) ;
   chien→loup, mouton→dragon (méchants, yeux rougeoyants : `yeux` dans ESPECES). Modèles Quaternius CC0 dans `models/creatures/`.

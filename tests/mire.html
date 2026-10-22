@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mire des animaux</title>
+  <title>Mire des cibles</title>
   <style>
     :root { color-scheme: dark; }
     body { margin: 0; padding: 16px; background: #111; color: #eee; font-family: system-ui, sans-serif; }
@@ -32,15 +32,17 @@
 </head>
 <body>
   <header>
-    <h1>Mire des animaux</h1>
+    <h1>Mire des cibles</h1>
     <p id="statut">Chargement du modèle…</p>
   </header>
   <div id="grille"></div>
   <div id="plein"><img alt=""></div>
   <script type="module">
     import { chargerDetecteur, detecter } from '../js/detector.js';
-    import { letterbox, versEcran, zoneDetection } from '../js/geometry.js';
-    import { ESPECES } from '../js/especes.js';
+    import { letterbox, versEcran, zoneDetection, rogner } from '../js/geometry.js';
+    import { ESPECES, especeDe, estVoiture } from '../js/especes.js';
+    import { couleurVoiture, zoneCarrosserie } from '../js/couleur.js';
+    import { chargerPosture, estimer, decoupeCarree, orientation } from '../js/posture.js';
 
     // Vraies photos Wikimedia Commons (licences libres, lien « source » sous chaque image) :
     // [animal attendu, titre, chemin Commons, licence].
@@ -65,9 +67,16 @@
       ['vache', 'Charolaises, Venezuela', 'c/cc/Charolais_cattle%2C_Sierra_Nevada%2C_Venezuela.jpg', 'CC0'],
       ['vache', 'Vache suisse', 'f/fb/CH_cow_2.jpg', 'CC BY-SA 3.0'],
       ['vache', 'Veau frison rouge et blanc', 'f/fb/New_born_Frisian_red_white_calf.jpg', 'CC BY-SA 3.0'],
+      ['voiture', 'Renault 5 E-Tech jaune-vert', 'a/a2/Renault_5_E-Tech_GIMS_2024_1X7A2227.jpg', 'CC BY-SA 4.0'],
+      ['voiture', 'XPeng G9 blanche, de dos', '9/98/XPeng_G9_Performance_IMG_9741.jpg', 'CC BY-SA 4.0'],
+      ['voiture', 'MG3 bleue', 'c/ca/MG_3_%283rd_generation%29_GIMS_2024_1X7A2243.jpg', 'CC BY-SA 4.0'],
+      ['voiture', 'Dacia Jogger grise', '8/8d/2024_Dacia_Jogger_Hybrid_GIMS_2024_1X7A2413.jpg', 'CC BY-SA 4.0'],
+      ['voiture', 'Riley bleu nuit (1961)', '5/5b/Riley_4-68_Riviera_1961.jpg', 'CC BY-SA 4.0'],
+      ['voiture', 'Delahaye 135 bordeaux (1948)', 'c/ce/Delahaye135_1948.jpg', 'CC BY-SA 4.0'],
+      ['voiture', 'MG S9 grise', 'e/e3/MG_S9_EV_GIMS_2024_1X7A2337.jpg', 'CC BY-SA 4.0'],
     ];
-    const COULEURS = { 15: '#ff7eb9', 16: '#ff3b30', 17: '#c792ff', 18: '#ff8a00', 19: '#2ecc40' };
-    const classeDe = (animal) => Number(Object.keys(ESPECES).find((c) => ESPECES[c].animal === animal));
+    const COULEURS = { 2: '#ffd60a', 15: '#ff7eb9', 16: '#ff3b30', 17: '#c792ff', 18: '#ff8a00', 19: '#2ecc40' };
+    const classeDe = (cible) => (cible === 'voiture' ? 2 : ESPECES[cible].classe);
     const miniature = (chemin) => `https://upload.wikimedia.org/wikipedia/commons/thumb/${chemin}/960px-${chemin.split('/').pop()}`;
     const page = (chemin) => `https://commons.wikimedia.org/wiki/File:${chemin.split('/').pop()}`;
 
@@ -86,14 +95,59 @@
       });
     }
 
+    // Comme le jeu : personnage d'une voiture selon sa couleur, posture d'un animal (si le modèle
+    // de posture est là). À calculer avant de dessiner les cadres sur l'image.
+    const echantillon = document.createElement('canvas');
+    echantillon.width = 32;
+    echantillon.height = 12;
+    const ctxEchantillon = echantillon.getContext('2d', { willReadFrequently: true });
+    const posture = await chargerPosture('../models/rtmpose-ap10k/model.json').catch(() => null);
+    const decoupe = document.createElement('canvas');
+    decoupe.width = decoupe.height = posture ? posture.taille : 1;
+    const ctxDecoupe = decoupe.getContext('2d');
+
+    function dessinerZone(ctxCible, img, zone) {
+      const { width: w, height: h } = ctxCible.canvas;
+      ctxCible.fillStyle = 'rgb(114,114,114)';
+      ctxCible.fillRect(0, 0, w, h);
+      const r = rogner({ sx: zone.x, sy: zone.y, sw: zone.w, sh: zone.h }, img.naturalWidth, img.naturalHeight, w, h);
+      if (r) ctxCible.drawImage(img, r.sx, r.sy, r.sw, r.sh, r.dx, r.dy, r.dw, r.dh);
+    }
+
+    async function annoter(img, b) {
+      if (estVoiture(b.classe)) {
+        dessinerZone(ctxEchantillon, img, zoneCarrosserie(b));
+        b.couleur = couleurVoiture(ctxEchantillon.getImageData(0, 0, 32, 12).data);
+        b.cle = especeDe(2, b.couleur);
+        return;
+      }
+      b.cle = especeDe(b.classe);
+      if (!posture) return;
+      const zone = decoupeCarree(b);
+      dessinerZone(ctxDecoupe, img, zone);
+      const k = decoupe.width / zone.w;
+      const points = await estimer(decoupe);
+      b.orientation = orientation(points, b.w * k);
+      b.points = points.map((p) => ({ x: zone.x + p.x / k, y: zone.y + p.y / k, score: p.score }));
+    }
+
     function dessiner(ctx, boites) {
       for (const b of boites) {
         const couleur = COULEURS[b.classe];
         ctx.lineWidth = 4;
         ctx.strokeStyle = couleur;
         ctx.strokeRect(b.x, b.y, b.w, b.h);
-        const e = ESPECES[b.classe];
-        const texte = `${e.animal} → ${e.nom} ${b.score.toFixed(2)}`;
+        const e = ESPECES[b.cle];
+        const o = b.orientation;
+        const regard = o ? ` ${['←', '·', '→'][o.sens + 1]} profil ${o.profil.toFixed(1)}` : '';
+        const texte = `${b.couleur ? `voiture ${b.couleur}` : e.cible} → ${e.nom} ${b.score.toFixed(2)}${regard}`;
+        for (const [i, p] of (b.points ?? []).entries()) {
+          if (p.score < 0.3) continue;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, i === 2 || i === 4 ? 7 : 4, 0, 2 * Math.PI);
+          ctx.fillStyle = i === 2 ? '#ff3b30' : i === 4 ? '#0a84ff' : '#0f0';
+          ctx.fill();
+        }
         ctx.font = '600 22px system-ui, sans-serif';
         const w = ctx.measureText(texte).width + 10;
         const y = Math.max(28, b.y);
@@ -110,7 +164,8 @@
     canvasEntree.height = entree.hauteur;
     const ctxEntree = canvasEntree.getContext('2d', { willReadFrequently: true });
     statut.textContent = `Modèle chargé (entrée ${entree.largeur}×${entree.hauteur}, backend ${tf.getBackend()}). `
-      + 'Cadres : animaux détectés et créature qui les remplacera. Clic sur une image : plein écran, à viser avec l\'iPhone.';
+      + `Cadres : cibles détectées et créature qui les remplacera${posture ? ' ; points de posture (nez rouge, queue bleue) et regard' : ' (modèle de posture absent)'}. `
+      + 'Clic sur une image : plein écran, à viser avec l\'iPhone.';
 
     let reussies = 0;
     for (const [animal, titre, chemin, licence] of IMAGES) {
@@ -143,11 +198,12 @@
         const boites = await detecter(canvasEntree);
         const ms = performance.now() - t0;
         const ecran = boites.map((b) => ({ ...versEcran(b, lb, img.naturalWidth, img.naturalHeight), score: b.score, classe: b.classe }));
+        for (const b of ecran) await annoter(img, b);
         dessiner(ctx, ecran);
 
         const attendu = classeDe(animal);
         const bons = ecran.filter((b) => b.classe === attendu);
-        const autres = ecran.filter((b) => b.classe !== attendu).map((b) => ESPECES[b.classe].animal);
+        const autres = ecran.filter((b) => b.classe !== attendu).map((b) => ESPECES[b.cle].cible);
         if (bons.length) reussies++;
         res.className = `res ${bons.length ? 'ok' : 'ko'}`;
         res.textContent = (bons.length
@@ -159,7 +215,7 @@
         res.textContent = `Erreur : ${e.message}`;
       }
     }
-    statut.textContent += ` — Bon animal détecté sur ${reussies}/${IMAGES.length} photos.`;
+    statut.textContent += ` — Bonne cible détectée sur ${reussies}/${IMAGES.length} photos.`;
 
     // Distance : la photo réduite (animal plus lointain) au centre d'un fond gris de même taille,
     // analysée en vue entière puis sur la zone centrale comme le fait le jeu.
