@@ -1,8 +1,5 @@
 // Caméra arrière dans un <video> caché, éteinte pendant les courses pour la batterie.
 
-const FIGEE_RELANCE_MS = 1500; // image immobile depuis ce délai : on relance la lecture
-const FIGEE_REDEMARRAGE_MS = 4000; // toujours immobile : on redémarre la caméra
-
 export async function demarrerCamera(video) {
   const flux = await navigator.mediaDevices.getUserMedia({
     audio: false,
@@ -23,49 +20,11 @@ export function arreterCamera(video) {
   video.srcObject = null;
 }
 
-// Surveillance d'une vidéo qui se fige (iOS, juste après l'autorisation de la caméra ou au retour
-// sur la page) : à appeler à chaque image pendant le tir. Relance la lecture, puis redémarre la
-// caméra si l'image reste immobile.
-export function creerGardien(video) {
-  let dernierTemps = -1;
-  let immobileDepuis = null;
-  let redemarrage = false;
-  let relance = false; // play() déjà relancé pour cette immobilité
-
+// Au retour sur la page (fenêtre d'autorisation, changement d'app), iOS peut laisser la vidéo en
+// pause : on relance la lecture. (Pas de surveillance de video.currentTime : avec un flux caméra,
+// Safari ne le fait pas avancer de façon fiable, et la caméra était redémarrée sans cesse.)
+export function relancerAuRetour(video) {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && video.srcObject) video.play().catch(() => {});
   });
-
-  return {
-    verifier(t) {
-      if (!video.srcObject || redemarrage) return;
-      if (video.currentTime !== dernierTemps) {
-        dernierTemps = video.currentTime;
-        immobileDepuis = null;
-        relance = false;
-        return;
-      }
-      immobileDepuis ??= t;
-      const duree = t - immobileDepuis;
-      if (duree > FIGEE_REDEMARRAGE_MS) {
-        redemarrage = true;
-        arreterCamera(video);
-        demarrerCamera(video)
-          .catch((e) => console.error('Redémarrage caméra :', e))
-          .finally(() => {
-            redemarrage = false;
-            immobileDepuis = null;
-            relance = false;
-          });
-      } else if (duree > FIGEE_RELANCE_MS && !relance) {
-        relance = true;
-        video.play().catch(() => {});
-      }
-    },
-    oublier() {
-      dernierTemps = -1;
-      immobileDepuis = null;
-      relance = false;
-    },
-  };
 }

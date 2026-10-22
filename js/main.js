@@ -2,7 +2,7 @@
 // animaux et des voitures par YOLO, créature 3D suivie par flux optique). La logique pure vit
 // dans game.js, especes.js, couleur.js, course.js, tracker.js, flow.js et geometry.js ; ce
 // fichier relie le navigateur (caméra, GPS, canvas, three.js, sons) à cette logique.
-import { demarrerCamera, arreterCamera, creerGardien } from './camera.js';
+import { demarrerCamera, arreterCamera, relancerAuRetour } from './camera.js';
 import { suivrePosition, garderEcranAllume } from './position.js';
 import { creerCourse } from './course.js';
 import { chargerDetecteur, detecter } from './detector.js';
@@ -98,7 +98,7 @@ function lancerPartie(entree, creatures) {
   let cible = null; // boîte écran de la cible quand elle est visible
   let allumageCamera = false;
   let finSerieA = null; // instant du tir
-  const gardien = creerGardien(video); // relance une vidéo figée (iOS)
+  relancerAuRetour(video);
   let dernierTir = { resultat: null, t: -Infinity };
 
   const canvasEntree = document.createElement('canvas'); // entrée du modèle
@@ -139,7 +139,6 @@ function lancerPartie(entree, creatures) {
     grisPrec = null;
     cible = null;
     votesCouleur = [];
-    gardien.oublier();
     etat = debloquerTir(etat);
     pasDeTir.hidden = true;
   }
@@ -272,7 +271,6 @@ function lancerPartie(entree, creatures) {
   }
 
   function imageTir(t) {
-    gardien.verifier(t);
     if (!video.videoWidth) return; // caméra pas encore prête
     const c = cadrage(video.videoWidth, video.videoHeight, rendu.largeur, rendu.hauteur, ZOOM);
     suivreImage(c);
