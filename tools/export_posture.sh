@@ -25,8 +25,19 @@ case "$1" in
     ls -la rtmpose.onnx
     ;;
   tf)
+    # Données d'essai fournies (photo de chien, déjà normalisée, NHWC) : sinon onnx2tf en
+    # télécharge et ce fichier ne se charge plus. Moyenne 0 et écart 1 : rien à renormaliser.
+    python3 - "$RACINE/tools/chien.jpg" <<'PY'
+import sys
+import numpy as np
+from PIL import Image
+img = np.asarray(Image.open(sys.argv[1]).convert("RGB").resize((256, 256)), dtype=np.float32)
+x = (img - [123.675, 116.28, 103.53]) / [58.395, 57.12, 57.375]
+np.save("essai.npy", x[None].astype(np.float32))
+PY
     # Lot fixé à 1, noms de sorties conservés (simcc_x, simcc_y) dans la signature.
-    onnx2tf -i rtmpose.onnx -o saved_model -b 1 -osd
+    onnx2tf -i rtmpose.onnx -o saved_model -b 1 -osd \
+      -cind input essai.npy "[[[[0.0,0.0,0.0]]]]" "[[[[1.0,1.0,1.0]]]]"
     ls -la saved_model
     ;;
   reference)
