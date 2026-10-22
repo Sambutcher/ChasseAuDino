@@ -33,7 +33,8 @@ const DUREE_FLASH_MS = 250;
 const PARAMS = new URLSearchParams(location.search);
 const DEBUG = PARAMS.has('debug'); // diagnostic à l'écran
 const SIMGPS = PARAMS.has('simgps'); // course simulée, pour tester sans courir
-const SANS_POSTURE = PARAMS.has('sansposture'); // sans modèle de posture (orientation par la forme)
+// Posture désactivée par défaut (plante encore sur iPhone SE) ; ?posture pour la tester.
+const SANS_POSTURE = !PARAMS.has('posture');
 
 const accueil = document.getElementById('accueil');
 const boutonDemarrer = document.getElementById('demarrer');
