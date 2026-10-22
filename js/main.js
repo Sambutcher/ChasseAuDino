@@ -157,6 +157,24 @@ function lancerPartie(entree, creatures) {
 
   const stats = {
     images: 0, detections: 0, inferenceMs: 0, postureMs: 0, fluxMs: 0, flux: { fiable: false }, debut: 0, texte: [],
+    erreurs: 0, derniereErreur: '',
+  };
+  // Diagnostic : contextes WebGL perdus (mémoire graphique saturée), TensorFlow ou créatures.
+  const contextesPerdus = [];
+  const surveillerContexte = (toile, nom) => toile?.addEventListener?.('webglcontextlost', () => {
+    contextesPerdus.push(nom);
+    console.warn(`Contexte WebGL perdu : ${nom}`);
+  });
+  surveillerContexte(canvasCreatures, '3D');
+  try {
+    surveillerContexte(tf.backend().gpgpu.gl.canvas, 'TF');
+  } catch (e) {
+    console.warn('Contexte TF non surveillé :', e);
+  }
+  const erreur = (e) => {
+    console.error(e);
+    stats.erreurs++;
+    stats.derniereErreur = String(e?.message || e).slice(0, 40);
   };
 
   // « Position de tir » : rallume la caméra (geste utilisateur, exigé par iOS) et charge la carabine.
@@ -279,7 +297,7 @@ function lancerPartie(entree, creatures) {
         const classe = etat.espece === null ? null : ESPECES[etat.espece].classe;
         suivi.maj(plusProcheDe(filtrerEspece(ecran, classe), centre), fin);
       })
-      .catch((e) => console.error(e))
+      .catch(erreur)
       .finally(() => { detectionEnCours = false; });
   }
 
@@ -320,7 +338,7 @@ function lancerPartie(entree, creatures) {
         if (o.fiable) historiquePosture = [...historiquePosture.slice(1 - HISTORIQUE_POSTURE), o];
         pointsEcran = points.map((p) => ({ x: decoupe.x + p.x / k, y: decoupe.y + p.y / k, score: p.score }));
       })
-      .catch((e) => console.error(e))
+      .catch(erreur)
       .finally(() => { postureEnCours = false; });
   }
 
@@ -427,6 +445,11 @@ function lancerPartie(entree, creatures) {
       `espèce ${etat.espece === null ? '—' : ESPECES[etat.espece].nom}`,
       `regard ${['←', '·', '→'][dernierSens + 1]} profil ${o ? o.profil.toFixed(2) : '—'}`,
       `couleur ${votesCouleur.length ? majorite(votesCouleur) : '—'}`,
+      `vidéo ${video.videoWidth}×${video.videoHeight}`,
+      `écran ${rendu.largeur}×${rendu.hauteur} ×${window.devicePixelRatio}`,
+      `GL perdu ${contextesPerdus.join(',') || 'non'}`,
+      `erreurs ${stats.erreurs}`,
+      ...(stats.derniereErreur ? [stats.derniereErreur.slice(0, 20), stats.derniereErreur.slice(20)] : []),
     ]);
   }
 
