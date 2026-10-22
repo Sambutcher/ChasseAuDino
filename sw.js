@@ -35,7 +35,7 @@ const FICHIERS = [
   'models/yolo11n/group1-shard3of3.bin',
   'models/creatures/dino.glb',
   'models/creatures/licorne.glb',
-  'models/creatures/demon.glb',
+  'models/creatures/loup.glb',
   'models/creatures/dragon.glb',
   'models/creatures/lapin.glb',
 ];

@@ -218,8 +218,9 @@ export function preparer(gltf, espece) {
   modele.traverse((o) => {
     if (o.isMesh) o.frustumCulled = false; // les animations sortent des boîtes de repos
   });
+  if (espece.teintes) teindre(modele, espece.teintes);
   if (espece.corne) licorne(modele);
-  if (espece.ton === 'mechant') yeuxRouges(modele);
+  if (espece.ton === 'mechant') yeuxRouges(modele, espece.yeux ?? 'Eye_White');
   mixer.stopAllAction();
 
   const oriente = new THREE.Group();
@@ -243,13 +244,18 @@ export function preparer(gltf, espece) {
   return { espece, pivot, mixer, attente, humeurs, fuite: action(espece.clips.fuite), ratio: taille.x / taille.y };
 }
 
-// Cheval → licorne : robe pastel, sabots dorés, crinière arc-en-ciel, corne dorée sur le front.
-function licorne(modele) {
-  const couleurs = { Main: '#fff4fa', Main_Light: '#ffffff', Muzzle: '#ffc4dc', Hooves: '#f6c945' };
+// Nouvelles couleurs, par nom de matériau.
+function teindre(modele, teintes) {
   modele.traverse((o) => {
     if (!o.isMesh) return;
-    for (const m of [].concat(o.material)) if (couleurs[m.name]) m.color.set(couleurs[m.name]);
-    arcEnCiel(o);
+    for (const m of [].concat(o.material)) if (teintes[m.name]) m.color.set(teintes[m.name]);
+  });
+}
+
+// Cheval (déjà teint en pastel) → licorne : crinière arc-en-ciel, corne dorée sur le front.
+function licorne(modele) {
+  modele.traverse((o) => {
+    if (o.isMesh) arcEnCiel(o);
   });
 
   // GLTFLoader retire les points des noms de nœuds (« Ear1.L » devient « Ear1L »).
@@ -322,11 +328,11 @@ function arcEnCiel(mesh) {
 }
 
 // Méchants : yeux rouges incandescents.
-function yeuxRouges(modele) {
+function yeuxRouges(modele, matiere) {
   modele.traverse((o) => {
     if (!o.isMesh) return;
     for (const m of [].concat(o.material)) {
-      if (m.name !== 'Eye_White') continue;
+      if (m.name !== matiere) continue;
       m.color.set('#330000');
       m.emissive?.set('#ff2a00');
       m.emissiveIntensity = 2;

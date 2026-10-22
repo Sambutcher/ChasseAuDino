@@ -8,11 +8,11 @@ Course et tir dans la rue, sur téléphone : la caméra cherche les **animaux** 
 | vache | dinosaure | kawaii |
 | cheval | licorne | kawaii |
 | chat | lapin | kawaii |
-| chien | démon | méchant |
+| chien | loup | méchant |
 | mouton | dragon | méchant |
 
 Les créatures kawaii sautillent, font coucou et explosent en étoiles colorées ; les méchantes
-volent, grognent, ont les yeux rouges et explosent en flammes et fumée.
+grognent, ont les yeux rouges et explosent en flammes et fumée.
 
 PWA installable, jouable **hors ligne**, pensée d'abord pour iPhone (iPhone SE 3ᵉ gén.).
 Inspirée de [Street Biathlon](https://github.com/Sambutcher/StreetBiathlon), dont elle reprend le socle.
@@ -90,6 +90,6 @@ puis créer la release (`gh release create vX.Y.Z`).
 - three.js 0.170.0 (`vendor/three.module.min.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`), MIT
   (`vendor/three-LICENSE.txt`).
 - Créatures par [Quaternius](https://quaternius.com), domaine public (CC0), via
-  [Poly Pizza](https://poly.pizza) : Dino, Bunny, Demon, Dragon Evolved
+  [Poly Pizza](https://poly.pizza) : Dino, Bunny, Dragon Evolved
   ([Ultimate Monsters](https://quaternius.com/packs/ultimatemonsters.html)) et White Horse
-  (base de la licorne). Merci !
+  (base de la licorne), Wolf (le loup). Merci !

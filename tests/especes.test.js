@@ -13,7 +13,7 @@ function clipsDu(fichier) {
 
 test('les 5 animaux COCO : chat, chien, cheval, mouton, vache', () => {
   assert.deepEqual(CLASSES, [15, 16, 17, 18, 19]);
-  assert.deepEqual(CLASSES.map((c) => ESPECES[c].nom), ['lapin', 'démon', 'licorne', 'dragon', 'dinosaure']);
+  assert.deepEqual(CLASSES.map((c) => ESPECES[c].nom), ['lapin', 'loup', 'licorne', 'dragon', 'dinosaure']);
   assert.deepEqual(CLASSES.map((c) => ESPECES[c].ton), ['kawaii', 'mechant', 'kawaii', 'mechant', 'kawaii']);
 });
 

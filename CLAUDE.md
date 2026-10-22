@@ -8,7 +8,7 @@
   cartouche** : la créature touchée explose, ratée elle s'enfuit → course… `?simgps`, `?debug`.
 - Animaux COCO détectés par le YOLO11n existant (aucun réentraînement), remplacés par une créature 3D
   (table `ESPECES` de `js/especes.js`) : chat→lapin, vache→dinosaure, cheval→licorne (kawaii) ;
-  chien→démon, mouton→dragon (méchants). Modèles Quaternius CC0 dans `models/creatures/`.
+  chien→loup, mouton→dragon (méchants, yeux rougeoyants : `yeux` dans ESPECES). Modèles Quaternius CC0 dans `models/creatures/`.
   La licorne est le cheval recoloré, avec corne ajoutée en code (`licorne()` de `js/creatures.js`).
 - 3D : three.js 0.170.0 copié dans `vendor/` (imports réécrits en relatif, pas d'import map).
   Trois canvas superposés : `#jeu` (vidéo 2D), `#creatures` (WebGL), `#hud` (interface 2D, reçoit les taps).

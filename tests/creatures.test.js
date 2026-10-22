@@ -41,6 +41,27 @@ test('licorne : corne dorée sur la tête, pointée vers le haut', async () => {
   assert.ok(base.y > 0.7, `corne en haut de la créature (y ${base.y})`);
 });
 
+for (const espece of Object.values(ESPECES).filter((e) => e.ton === 'mechant')) {
+  test(`${espece.nom} : yeux rougeoyants`, async () => {
+    const m = await charger(espece);
+    const yeux = [];
+    m.pivot.traverse((o) => {
+      if (o.isMesh) yeux.push(...[].concat(o.material).filter((x) => x.name === (espece.yeux ?? 'Eye_White')));
+    });
+    assert.ok(yeux.length > 0, 'matériau des yeux trouvé');
+    assert.ok(yeux.every((x) => x.emissiveIntensity === 2 && x.emissive.r > 0.5));
+  });
+}
+
+test('loup : robe sombre', async () => {
+  const m = await charger(ESPECES[16]);
+  const robes = [];
+  m.pivot.traverse((o) => {
+    if (o.isMesh) robes.push(...[].concat(o.material).filter((x) => x.name === 'Main'));
+  });
+  assert.ok(robes.length > 0 && robes.every((x) => x.color.getHexString() === new THREE.Color('#2e3136').getHexString()));
+});
+
 for (const classe of [19, 18]) {
   test(`explosion du ${ESPECES[classe].nom} : éclats issus de la créature, effet borné dans le temps`, async () => {
     const m = await charger(ESPECES[classe]);

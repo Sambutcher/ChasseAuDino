@@ -5,20 +5,26 @@
 // vol : la créature flotte au milieu de la boîte au lieu de poser les pieds en bas.
 // clips : noms des animations du .glb (sans le préfixe « Armature| »).
 // cap : rotation de base (radians) pour un modèle qui regarderait la caméra de face trop étroit.
+// teintes : nouvelles couleurs par nom de matériau. yeux : matériau des yeux, rougeoyants chez
+// les méchants (Eye_White par défaut).
 export const ESPECES = {
   15: {
     animal: 'chat', nom: 'lapin', fichier: 'models/creatures/lapin.glb', ton: 'kawaii', vol: false,
     clips: { attente: 'Idle', humeurs: ['Wave', 'Jump', 'Yes'], fuite: 'Run' },
   },
   16: {
-    animal: 'chien', nom: 'démon', fichier: 'models/creatures/demon.glb', ton: 'mechant', vol: true,
-    clips: { attente: 'Flying_Idle', humeurs: ['Punch', 'Headbutt', 'No'], fuite: 'Fast_Flying' },
+    animal: 'chien', nom: 'loup', fichier: 'models/creatures/loup.glb', ton: 'mechant', vol: false,
+    clips: { attente: 'Idle', humeurs: ['Attack', 'Idle_2_HeadLow'], fuite: 'Gallop' },
+    cap: 0.9, // vu de trois quarts plutôt que de face
+    teintes: { Main: '#2e3136', Main_Light: '#5d6168', Nose: '#111111' },
+    yeux: 'Eyes_Black',
   },
   17: {
     animal: 'cheval', nom: 'licorne', fichier: 'models/creatures/licorne.glb', ton: 'kawaii', vol: false,
     clips: { attente: 'Idle', humeurs: ['Idle_2', 'Idle_Headlow'], fuite: 'Gallop' },
     feminin: true,
     cap: 0.9, // cheval vu de trois quarts plutôt que de face
+    teintes: { Main: '#fff4fa', Main_Light: '#ffffff', Muzzle: '#ffc4dc', Hooves: '#f6c945' },
     corne: true, // cheval transformé en licorne au chargement
   },
   18: {
