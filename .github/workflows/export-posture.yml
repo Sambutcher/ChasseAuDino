@@ -1,5 +1,5 @@
-# Conversion de RTMPose-m (posture animale AP-10K) en TensorFlow.js (TensorFlow exige l'AVX,
-# absent du PC de dev). Résultat : artefact « rtmpose-ap10k-tfjs » à copier dans models/.
+# Préparation de RTMPose-m (posture animale AP-10K) pour ONNX Runtime Web : modèle figé,
+# version int8, comparaison avec float32. Résultat : artefact « rtmpose-onnx » à copier dans models/.
 # Lancement manuel : gh workflow run export-posture.yml -R Sambutcher/ChasseAuDino --ref <branche>
 name: Export du modèle de posture
 
@@ -14,34 +14,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Installer onnx2tf, ONNX Runtime et tensorflowjs
-        run: |
-          pip install "tensorflow==2.17.1" "tf_keras==2.17.0" "onnx==1.16.1" "onnxruntime==1.18.1" \
-            "onnx2tf==1.25.7" "onnxsim==0.4.36" onnx_graphsurgeon sng4onnx psutil "tensorflowjs==4.22.0" numpy pillow
-      - name: Télécharger le modèle ONNX
-        timeout-minutes: 5
-        run: tools/export_posture.sh onnx
-      - name: Convertir en SavedModel (onnx2tf)
-        timeout-minutes: 25
-        run: tools/export_posture.sh tf
-      - name: Comparer ONNX Runtime et TensorFlow
-        timeout-minutes: 10
-        run: tools/export_posture.sh reference
-      - name: Convertir en TensorFlow.js
-        timeout-minutes: 15
-        run: tools/export_posture.sh tfjs
-      - name: Vérifier avec TF.js
-        timeout-minutes: 10
-        run: |
-          npm install --no-save @tensorflow/tfjs-node@4.22.0
-          node tools/check_posture.mjs models/rtmpose-ap10k models/rtmpose-reference
+      - name: Installer ONNX, onnxsim et ONNX Runtime
+        run: pip install "onnx==1.16.1" "onnxsim==0.4.36" "onnxruntime==1.20.1" numpy pillow
+      - name: Préparer et comparer
+        timeout-minutes: 20
+        run: tools/export_posture.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rtmpose-ap10k-tfjs
-          path: |
-            models/rtmpose-ap10k/
-            models/rtmpose-reference/
+          name: rtmpose-onnx
+          path: models/rtmpose-onnx/
