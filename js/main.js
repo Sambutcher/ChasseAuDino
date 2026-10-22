@@ -38,8 +38,16 @@ const pasDeTir = document.getElementById('pas-de-tir');
 const boutonTir = document.getElementById('position-tir');
 const erreurCamera = document.getElementById('erreur-camera');
 
+// Pas de service worker sur le serveur de dev (adresse IP ou localhost) : avec le certificat
+// auto-signé, ses requêtes réseau échouent (« Load failed ») et il bloquerait toutes les pages
+// de l'adresse, y compris celles d'un autre projet servi au même endroit.
+const DEV = /^(\d+\.){3}\d+$|^localhost$/.test(location.hostname);
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker :', e));
+  if (DEV) {
+    navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+  } else {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker :', e));
+  }
 }
 
 const sons = creerSons();

@@ -48,8 +48,11 @@ python3 tools/serve.py      # HTTPS sur https://<ip-du-pc>:8443 (certificat auto
   au viseur pour vérifier la silhouette.
 
 Sur l'iPhone, ouvrir l'adresse affichée et accepter le certificat. Le mode hors ligne (service
-worker) ne se teste que sur GitHub Pages, Safari refusant les service workers avec un certificat
-auto-signé.
+worker) ne se teste que sur GitHub Pages : en dev (adresse IP ou localhost), la page n'enregistre
+pas de service worker et désinstalle ceux qui traînent, car leurs requêtes échouent avec le
+certificat auto-signé. Si une page de dev affiche « FetchEvent.respondWith received an error »,
+un ancien service worker (par exemple celui de Street Biathlon, servi à la même adresse) est
+resté : Réglages → Apps → Safari → Avancé → Données des sites web → supprimer 192.168.1.147.
 
 | Fichier | Rôle |
 |---|---|
