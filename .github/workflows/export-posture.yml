@@ -21,9 +21,20 @@ jobs:
         run: |
           pip install "tensorflow==2.17.1" "tf_keras==2.17.0" "onnx==1.16.1" "onnxruntime==1.18.1" \
             "onnx2tf==1.25.7" onnx_graphsurgeon sng4onnx psutil "tensorflowjs==4.22.0" numpy pillow
-      - name: Exporter
-        run: tools/export_posture.sh
+      - name: Télécharger le modèle ONNX
+        timeout-minutes: 5
+        run: tools/export_posture.sh onnx
+      - name: Convertir en SavedModel (onnx2tf)
+        timeout-minutes: 25
+        run: tools/export_posture.sh tf
+      - name: Comparer ONNX Runtime et TensorFlow
+        timeout-minutes: 10
+        run: tools/export_posture.sh reference
+      - name: Convertir en TensorFlow.js
+        timeout-minutes: 15
+        run: tools/export_posture.sh tfjs
       - name: Vérifier avec TF.js
+        timeout-minutes: 10
         run: |
           npm install --no-save @tensorflow/tfjs-node@4.22.0
           node tools/check_posture.mjs models/rtmpose-ap10k models/rtmpose-reference
