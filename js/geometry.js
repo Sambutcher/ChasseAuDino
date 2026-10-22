@@ -74,6 +74,24 @@ export function dansRect(point, r) {
   return point.x >= r.x && point.x <= r.x + r.w && point.y >= r.y && point.y <= r.y + r.h;
 }
 
+// Où dessiner la vidéo ENTIÈRE (drawImage(video, x, y, w, h)) pour que la zone `zone` de l'écran
+// remplisse le rectangle `cible` d'un canvas, pour un cadrage `c` calculé sur la taille annoncée
+// vw×vh. Sans découpe de la source, le navigateur étire l'image réellement reçue : juste après
+// l'allumage, iOS livre des images plus petites que videoWidth/videoHeight, et une découpe calculée
+// sur ces dimensions n'affichait qu'un quart de l'image (« bug du quart d'image »).
+export function placementVideo(c, vw, vh, ecranW, ecranH, zone, cible) {
+  const kx = ecranW / c.sw; // pixels vidéo → écran
+  const ky = ecranH / c.sh;
+  const sx = cible.w / zone.w; // écran → canvas cible
+  const sy = cible.h / zone.h;
+  return {
+    x: cible.x + (-c.sx * kx - zone.x) * sx,
+    y: cible.y + (-c.sy * ky - zone.y) * sy,
+    w: vw * kx * sx,
+    h: vh * ky * sy,
+  };
+}
+
 // Rectangle source `src` (pixels vidéo) à dessiner sur une destination dw×dh, rogné aux bords de
 // la vidéo (vw×vh) : renvoie les arguments de drawImage pour la partie visible, ou null.
 // Safari dessine mal une source qui déborde de l'image.

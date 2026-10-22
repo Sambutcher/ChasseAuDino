@@ -1,6 +1,7 @@
 // Dessin 2D plein écran (coordonnées en points CSS), sur deux canvas qui encadrent celui des
 // créatures 3D : la vidéo dessous, l'interface (viseur, cartouche, messages, course) dessus.
 import { CARTOUCHES } from './game.js';
+import { placementVideo } from './geometry.js';
 
 export function creerRendu(canvasVideo, canvas) {
   const ctxVideo = canvasVideo.getContext('2d');
@@ -23,8 +24,11 @@ export function creerRendu(canvasVideo, canvas) {
   window.addEventListener('resize', redimensionner);
   redimensionner();
 
+  // Vidéo entière, placée selon le cadrage (voir placementVideo : pas de découpe de la source).
   function video(source, c) {
-    ctxVideo.drawImage(source, c.sx, c.sy, c.sw, c.sh, 0, 0, largeur, hauteur);
+    const ecran = { x: 0, y: 0, w: largeur, h: hauteur };
+    const p = placementVideo(c, source.videoWidth, source.videoHeight, largeur, hauteur, ecran, ecran);
+    ctxVideo.drawImage(source, p.x, p.y, p.w, p.h);
   }
 
   function effacer() {

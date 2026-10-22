@@ -16,7 +16,7 @@ import { chargerPosture, estimer, decoupeCarree, orientation, combiner } from '.
 import { creerSuivi } from './tracker.js';
 import { versGris, estimerDecalage } from './flow.js';
 import { nouvelEtat, debloquerTir, finSerie, serieTerminee, voirCreature, quitterCreature, tirer } from './game.js';
-import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, rogner } from './geometry.js';
+import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, placementVideo } from './geometry.js';
 
 const URL_MODELE = 'models/yolo11n/model.json';
 const URL_POSTURE = 'models/rtmpose-ap10k/model.json';
@@ -218,7 +218,7 @@ function lancerPartie(entree, creatures, posture) {
       canvasFlux.height = h;
       grisPrec = null;
     }
-    ctxFlux.drawImage(video, c.sx, c.sy, c.sw, c.sh, 0, 0, l, h);
+    dessinerVideo(ctxFlux, c, { x: 0, y: 0, w: rendu.largeur, h: rendu.hauteur }, { x: 0, y: 0, w: l, h });
     const gris = versGris(ctxFlux.getImageData(0, 0, l, h).data);
     if (grisPrec) {
       const b = suivi.lire(t0).cible;
@@ -245,11 +245,10 @@ function lancerPartie(entree, creatures, posture) {
     const zone = zoneDetection(suivi.lire(t).cible, rendu.largeur, rendu.hauteur,
       canvasEntree.width / canvasEntree.height, cycleDetection++);
     zoneAnalysee = zone;
-    const src = zoneVersSource(zone, c, rendu.largeur, rendu.hauteur);
-    const lb = letterbox(src.sw, src.sh, canvasEntree.width, canvasEntree.height);
+    const lb = letterbox(zone.w, zone.h, canvasEntree.width, canvasEntree.height);
     ctxEntree.fillStyle = 'rgb(114,114,114)';
     ctxEntree.fillRect(0, 0, canvasEntree.width, canvasEntree.height);
-    ctxEntree.drawImage(video, src.sx, src.sy, src.sw, src.sh, lb.dx, lb.dy, lb.dw, lb.dh);
+    dessinerVideo(ctxEntree, c, zone, { x: lb.dx, y: lb.dy, w: lb.dw, h: lb.dh });
     detecter(canvasEntree)
       .then((boites) => {
         if (suivi !== suiviLancement) return; // série terminée entre-temps
@@ -274,13 +273,24 @@ function lancerPartie(entree, creatures, posture) {
       .finally(() => { detectionEnCours = false; });
   }
 
-  // Dessine une zone de l'écran (vue de la caméra) sur toute la surface d'un canvas, gris hors image.
+  // Dessine la zone `zone` de l'écran (vue de la caméra) dans le rectangle `cible` d'un canvas :
+  // vidéo entière placée par placementVideo, jamais découpée (bug du quart d'image sur iOS).
+  function dessinerVideo(ctx, c, zone, cible) {
+    const p = placementVideo(c, video.videoWidth, video.videoHeight, rendu.largeur, rendu.hauteur, zone, cible);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cible.x, cible.y, cible.w, cible.h);
+    ctx.clip();
+    ctx.drawImage(video, p.x, p.y, p.w, p.h);
+    ctx.restore();
+  }
+
+  // Dessine une zone de l'écran sur toute la surface d'un canvas, gris hors image.
   function dessinerZone(ctx, zone, c) {
     const { width: w, height: h } = ctx.canvas;
     ctx.fillStyle = 'rgb(114,114,114)';
     ctx.fillRect(0, 0, w, h);
-    const r = rogner(zoneVersSource(zone, c, rendu.largeur, rendu.hauteur), video.videoWidth, video.videoHeight, w, h);
-    if (r) ctx.drawImage(video, r.sx, r.sy, r.sw, r.sh, r.dx, r.dy, r.dw, r.dh);
+    dessinerVideo(ctx, c, zone, { x: 0, y: 0, w, h });
   }
 
   // Posture de l'animal suivi, sur sa découpe carrée ; une inférence à la fois (comme la détection).
