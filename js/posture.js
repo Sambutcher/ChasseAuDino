@@ -47,11 +47,12 @@ export async function estimer(canvas) {
 
 export const tailleEntree = () => taille;
 
-// Sorties [x, y] reconnues à leur nom (simcc_x, simcc_y), sinon dans l'ordre du modèle.
+// Sorties [x, y] reconnues à leur nom (simcc_x, simcc_y, ou output_0, output_1 après onnx2tf qui
+// garde l'ordre ONNX), sinon dans l'ordre du modèle. Vérifié par tools/check_posture.mjs.
 export function sortiesSimcc(m, sorties) {
   const noms = m.outputs.map((o) => o.name);
-  const ix = noms.findIndex((n) => /simcc_x/.test(n));
-  const iy = noms.findIndex((n) => /simcc_y/.test(n));
+  const ix = noms.findIndex((n) => /simcc_x|output_0/.test(n));
+  const iy = noms.findIndex((n) => /simcc_y|output_1/.test(n));
   return ix >= 0 && iy >= 0 ? [sorties[ix], sorties[iy]] : sorties;
 }
 

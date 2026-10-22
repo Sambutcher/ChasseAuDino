@@ -45,7 +45,13 @@ f = modele.signatures["serving_default"]
 print("signature :", f.structured_input_signature, f.structured_outputs)
 r = {k: v.numpy() for k, v in f(**{next(iter(f.structured_input_signature[1])): tf.constant(nhwc)}).items()}
 print("sorties TF :", {k: v.shape for k, v in r.items()})
-tf_points = points(r["simcc_x"], r["simcc_y"])
+# onnx2tf renomme les sorties (output_0, output_1…) : chacune est associée à la sortie ONNX la
+# plus proche numériquement.
+proche = lambda ref: min(r, key=lambda k: float(np.abs(r[k] - ref).max()))
+nx, ny = proche(sorties["simcc_x"]), proche(sorties["simcc_y"])
+print(f"simcc_x = {nx}, simcc_y = {ny}")
+assert nx != ny, "sorties TF indiscernables"
+tf_points = points(r[nx], r[ny])
 ecart = max(max(abs(a["x"] - b["x"]), abs(a["y"] - b["y"])) for a, b in zip(ref, tf_points) if a["score"] > 0.3)
 print("points ONNX :", [(round(p["x"]), round(p["y"]), round(p["score"], 2)) for p in ref])
 print(f"écart max ONNX ↔ TF : {ecart} px")

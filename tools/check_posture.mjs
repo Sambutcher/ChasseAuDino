@@ -15,17 +15,23 @@ const ref = JSON.parse(await readFile(resolve(dossierRef, 'reference.json'), 'ut
 const brut = await readFile(resolve(dossierRef, 'entree.bin'));
 const entree = tf.tensor(new Float32Array(brut.buffer, brut.byteOffset, brut.length / 4), [1, 256, 256, 3]);
 const sorties = modele.execute(entree);
-const [sx, sy] = sortiesSimcc(modele, sorties);
-const n = sx.shape[2];
-const points = decoderSimcc(await sx.data(), await sy.data(), 17, n);
-
-let ecart = 0;
-points.forEach((p, i) => {
-  if (ref[i].score > 0.3) ecart = Math.max(ecart, Math.abs(p.x - ref[i].x), Math.abs(p.y - ref[i].y));
-});
-console.log('points TF.js', points.map((p) => `${p.x.toFixed(0)},${p.y.toFixed(0)} ${p.score.toFixed(2)}`).join(' | '));
-console.log(`écart max TF.js ↔ ONNX : ${ecart} px`);
-if (ecart > 3) {
-  console.error('Conversion TF.js incorrecte.');
+const n = sorties[0].shape[2];
+const ecartAvec = async ([sx, sy]) => {
+  const points = decoderSimcc(await sx.data(), await sy.data(), 17, n);
+  let ecart = 0;
+  points.forEach((p, i) => {
+    if (ref[i].score > 0.3) ecart = Math.max(ecart, Math.abs(p.x - ref[i].x), Math.abs(p.y - ref[i].y));
+  });
+  return { ecart, points };
+};
+// Ordre retenu par le jeu (sortiesSimcc), puis l'ordre inverse pour diagnostic.
+const jeu = await ecartAvec(sortiesSimcc(modele, sorties));
+const inverse = await ecartAvec([...sortiesSimcc(modele, sorties)].reverse());
+console.log('points TF.js', jeu.points.map((p) => `${p.x.toFixed(0)},${p.y.toFixed(0)} ${p.score.toFixed(2)}`).join(' | '));
+console.log(`écart max TF.js ↔ ONNX : ${jeu.ecart} px (ordre inverse : ${inverse.ecart} px)`);
+if (jeu.ecart > 3) {
+  console.error(inverse.ecart <= 3
+    ? 'Sorties x et y inversées : corriger sortiesSimcc dans js/posture.js.'
+    : 'Conversion TF.js incorrecte.');
   process.exit(1);
 }

@@ -39,6 +39,7 @@ jobs:
           npm install --no-save @tensorflow/tfjs-node@4.22.0
           node tools/check_posture.mjs models/rtmpose-ap10k models/rtmpose-reference
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: rtmpose-ap10k-tfjs
           path: |

@@ -20,6 +20,7 @@ test('decoderSimcc : maximum de chaque distribution / 2, confiance = plus petit 
 test('sortiesSimcc : sorties reconnues à leur nom, sinon dans l\'ordre', () => {
   const m = { outputs: [{ name: 'simcc_y' }, { name: 'simcc_x' }] };
   assert.deepEqual(sortiesSimcc(m, ['Y', 'X']), ['X', 'Y']);
+  assert.deepEqual(sortiesSimcc({ outputs: [{ name: 'output_1' }, { name: 'output_0' }] }, ['Y', 'X']), ['X', 'Y']);
   assert.deepEqual(sortiesSimcc({ outputs: [{ name: 'Identity' }, { name: 'Identity_1' }] }, ['A', 'B']), ['A', 'B']);
 });
 
