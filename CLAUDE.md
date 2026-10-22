@@ -1,11 +1,11 @@
-# Chasse au dino — notes pour Claude
+# Chasse aux bébêtes (dépôt ChasseAuDino) — notes pour Claude
 
 - Dérivé de Street Biathlon (`~/Code/street-biathlon`) : même socle (course GPS, caméra, détection
   YOLO11n, flux optique, suivi, PWA). Un correctif du socle vaut souvent pour les deux projets.
 - PWA **vanilla JS sans build** (modules ES), cible iPhone SE 3ᵉ gén. (Safari), hors ligne.
   Ne pas introduire de bundler ni de framework. Licence AGPL-3.0.
 - Partie = course (100 m à vol d'oiseau au GPS, caméra éteinte) → « Position de tir » → **une seule
-  cartouche** : la créature touchée explose, ratée elle s'enfuit → course… `?simgps` simule la course.
+  cartouche** : la créature touchée explose, ratée elle s'enfuit → course… Bouton « Skip » sur l'écran de course : tir sans courir.
 - Voitures (COCO 2) → héros / squelettes KayKit (CC0) selon la couleur de la carrosserie
   (`js/couleur.js`, `PERSONNAGES_VOITURE`) ; modèles allégés par `tools/alleger_kaykit.py`.
 - v1 stable (branche `v1-stable-sans-posture`) : YOLO seul, sans orientation, sans outils de test

@@ -1,4 +1,4 @@
-# Chasse au dino
+# Chasse aux bébêtes
 
 Course et tir dans la rue, sur téléphone : la caméra cherche les **animaux** et les **voitures** et
 les change en **créatures 3D**. Une seule cartouche : touchée, la créature **explose** ; ratée, elle **s'enfuit**.
@@ -40,7 +40,7 @@ Une partie alterne **course** et **tir** :
 - **Course** (caméra éteinte pour la batterie) : s'éloigner de **100 m à vol d'oiseau** du point de
   départ, mesuré au GPS. Garder l'écran allumé (iOS coupe le GPS écran verrouillé).
 - Au-delà de 100 m, le bouton **Position de tir** s'active : il rallume la caméra et charge
-  **une cartouche**.
+  **une cartouche**. Le bouton **Skip** fait de même sans courir.
 - **Tir** : trouvez un animal ou une voiture, la croix au centre sur la créature, un tap = le tir. Touchée, elle
   explose ; ratée (la croix hors de sa silhouette), elle s'enfuit. Puis nouvelle course.
 
@@ -55,7 +55,6 @@ node --test tests/          # tests unitaires (Node ≥ 18, aucune dépendance)
 python3 tools/serve.py      # HTTPS sur https://<ip-du-pc>:8443 (certificat auto-signé)
 ```
 
-- `?simgps` simule la course (~3 m/s, environ 35 s pour 100 m) sans bouger.
 
 Sur l'iPhone, ouvrir l'adresse affichée et accepter le certificat. Le mode hors ligne (service
 worker) ne se teste que sur GitHub Pages : en dev (adresse IP ou localhost), la page n'enregistre
@@ -77,7 +76,7 @@ resté : Réglages → Apps → Safari → Avancé → Données des sites web �
 | `js/tracker.js` | suivi de l'animal, hystérésis, espèce de la première vue (pur, testé) |
 | `js/game.js` | état du jeu : phases course/tir, cartouche unique, issue (pur, testé) |
 | `js/course.js` | distance à vol d'oiseau, départ, déblocage du tir (pur, testé) |
-| `js/position.js` | GPS (`watchPosition`), simulation `?simgps`, écran maintenu allumé |
+| `js/position.js` | GPS (`watchPosition`), écran maintenu allumé |
 | `js/geometry.js` | cadrage, letterbox, zones de détection (pur, testé) |
 | `js/render.js` | dessin 2D : vidéo, viseur, cartouche, messages, écran de course |
 | `sw.js` | cache hors ligne |
@@ -97,7 +96,7 @@ puis créer la release (`gh release create vX.Y.Z`).
 
 ## Licences et crédits
 
-- Chasse au dino : **AGPL-3.0** (voir `LICENSE`), imposée par le modèle de détection.
+- Chasse aux bébêtes : **AGPL-3.0** (voir `LICENSE`), imposée par le modèle de détection.
 - YOLO11n © Ultralytics, AGPL-3.0.
 - TensorFlow.js 4.22.0 (`vendor/tf.min.js`), Apache-2.0.
 - three.js 0.170.0 (`vendor/three.module.min.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`), MIT

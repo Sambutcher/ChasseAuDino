@@ -25,7 +25,6 @@ const RAYON_FLUX = 12; // déplacement max mesuré par trame, en pixels de l'ima
 const DISTANCE_COURSE = 100; // mètres à vol d'oiseau pour débloquer le tir
 const DELAI_FIN_SERIE_MS = 2200; // temps de l'explosion ou de la fuite après le tir
 const DUREE_FLASH_MS = 250;
-const SIMGPS = new URLSearchParams(location.search).has('simgps'); // course simulée, pour tester sans courir
 
 const accueil = document.getElementById('accueil');
 const boutonDemarrer = document.getElementById('demarrer');
@@ -36,6 +35,7 @@ const canvasCreatures = document.getElementById('creatures');
 const canvas = document.getElementById('hud');
 const pasDeTir = document.getElementById('pas-de-tir');
 const boutonTir = document.getElementById('position-tir');
+const boutonSkip = document.getElementById('skip');
 const erreurCamera = document.getElementById('erreur-camera');
 
 // Pas de service worker sur le serveur de dev (adresse IP ou localhost) : avec le certificat
@@ -80,7 +80,6 @@ function lancerPartie(entree, creatures) {
   suivrePosition(
     (fix) => { alerteGps = null; course.ajouter(fix); },
     (message) => { alerteGps = message; },
-    { simulation: SIMGPS },
   );
   course.demarrer(Date.now());
   pasDeTir.hidden = false;
@@ -110,9 +109,10 @@ function lancerPartie(entree, creatures) {
   const ctxCouleur = canvasCouleur.getContext('2d', { willReadFrequently: true });
   let votesCouleur = [];
 
-  // « Position de tir » : rallume la caméra (geste utilisateur, exigé par iOS) et charge la carabine.
-  boutonTir.addEventListener('click', async () => {
-    if (course.etat().phase !== 'fini' || allumageCamera) return;
+  // « Position de tir » (après 100 m) ou « Skip » (sans courir) : rallume la caméra (geste
+  // utilisateur, exigé par iOS) et charge la carabine.
+  async function allerAuTir() {
+    if (allumageCamera) return;
     allumageCamera = true;
     boutonTir.disabled = true;
     erreurCamera.textContent = '';
@@ -131,7 +131,11 @@ function lancerPartie(entree, creatures) {
     votesCouleur = [];
     etat = debloquerTir(etat);
     pasDeTir.hidden = true;
+  }
+  boutonTir.addEventListener('click', () => {
+    if (course.etat().phase === 'fini') allerAuTir();
   });
+  boutonSkip.addEventListener('click', allerAuTir);
 
   // Série terminée : caméra coupée, nouvelle course depuis la position actuelle.
   function passerEnCourse() {
@@ -283,7 +287,6 @@ function lancerPartie(entree, creatures) {
     if (visible && !etat.issue) rendu.viseur();
     if (visible || serieTerminee(etat)) rendu.cartouches(etat.cartouches);
     if (etat.issue) rendu.message(messageIssue(ESPECES[etat.espece], etat.issue));
-    else if (!visible) rendu.message('Cherchez un animal ou une voiture…');
 
     const age = t - dernierTir.t;
     if (age < DUREE_FLASH_MS) rendu.flash(dernierTir.resultat, 1 - age / DUREE_FLASH_MS);
