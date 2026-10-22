@@ -46,6 +46,9 @@ python3 tools/serve.py      # HTTPS sur https://<ip-du-pc>:8443 (certificat auto
 - `?debug` affiche images/s, détections/s, durée d'inférence, flux optique et espèce suivie.
 - `tests/bestiaire.html` montre les 5 créatures sans caméra : mimiques, explosion, fuite, et tir
   au viseur pour vérifier la silhouette.
+- `tests/mire.html` passe 20 vraies photos d'animaux (Wikimedia Commons, licences libres, chargées
+  en ligne) dans le détecteur, avec un tableau de détection selon la distance. Clic = plein
+  écran, pour viser l'écran du PC avec l'iPhone en jeu.
 
 Sur l'iPhone, ouvrir l'adresse affichée et accepter le certificat. Le mode hors ligne (service
 worker) ne se teste que sur GitHub Pages : en dev (adresse IP ou localhost), la page n'enregistre

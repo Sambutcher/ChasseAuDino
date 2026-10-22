@@ -16,6 +16,7 @@
   `js/course.js`) et préparation des modèles (`preparer`, `creerExplosion` de `js/creatures.js`,
   three.js tourne sous Node sans WebGL) testées par `node --test tests/` (Node 18 apt, pas de npm).
 - `tests/bestiaire.html` : bac à sable des créatures (mimiques, explosion, fuite, tir) sans caméra.
+  `tests/mire.html` : détection sur 20 vraies photos d'animaux (Wikimedia Commons, en ligne).
 - Tout fichier servi doit figurer dans `FICHIERS` de `sw.js` ; `VERSION` (sw.js + index.html)
   change à chaque mise en ligne. `tests/pwa.test.js` vérifie les deux.
 - Dev sur iPhone : `python3 tools/serve.py` (HTTPS auto-signé, IP locale 192.168.1.147:8443).

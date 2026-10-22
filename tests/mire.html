@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mire des animaux</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 16px; background: #111; color: #eee; font-family: system-ui, sans-serif; }
+    h1 { margin: 0 0 4px; font-size: 22px; }
+    header p { margin: 0 0 16px; color: #aaa; }
+    #grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    figure { margin: 0; background: #1c1c1c; border-radius: 8px; overflow: hidden; }
+    canvas { display: block; width: 100%; height: auto; cursor: zoom-in; }
+    figcaption { padding: 8px 10px; font-size: 13px; line-height: 1.4; }
+    .res { font-weight: 600; }
+    .ok { color: #2ecc40; }
+    .ko { color: #ff6b5b; }
+    figcaption a { color: #888; }
+    #plein { position: fixed; inset: 0; background: #000; display: none; align-items: center; justify-content: center; cursor: zoom-out; }
+    #plein img { max-width: 100%; max-height: 100%; }
+    section { margin-top: 32px; }
+    h2 { font-size: 18px; margin: 0 0 4px; }
+    section p { color: #aaa; margin: 0 0 12px; }
+    table { border-collapse: collapse; font-size: 13px; width: 100%; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid #333; text-align: center; }
+    td:first-child, th:first-child { text-align: left; }
+    td.ok { color: #2ecc40; }
+    td.ko { color: #ff6b5b; }
+  </style>
+  <script src="../vendor/tf.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Mire des animaux</h1>
+    <p id="statut">Chargement du modèle…</p>
+  </header>
+  <div id="grille"></div>
+  <div id="plein"><img alt=""></div>
+  <script type="module">
+    import { chargerDetecteur, detecter } from '../js/detector.js';
+    import { letterbox, versEcran, zoneDetection } from '../js/geometry.js';
+    import { ESPECES } from '../js/especes.js';
+
+    // Vraies photos Wikimedia Commons (licences libres, lien « source » sous chaque image) :
+    // [animal attendu, titre, chemin Commons, licence].
+    const IMAGES = [
+      ['chat', 'Chat à Piran (Slovénie)', '5/5f/Cat_in_Piran%2C_Slovenia%2C_20240504_1600_8594.jpg', 'CC BY 4.0'],
+      ['chat', 'Chatte errante, Livourne', 'd/d4/Gatta_randagia_Livorno.JPG', 'CC BY-SA 3.0'],
+      ['chat', 'Chaton tigré roux et blanc', 'b/bd/Golden_tabby_and_white_kitten_n01.jpg', 'CC BY 2.5'],
+      ['chat', 'Chat dans l\'herbe, Bichkek', 'c/c0/%D0%91%D0%B8%D1%88%D0%BA%D0%B5%D0%BA%2C_%D0%BA%D0%BE%D1%82_%D0%B2_%D1%82%D1%80%D0%B0%D0%B2%D0%B5_%D0%BD%D0%B0_%D0%AD%D0%BB%D0%B5%D0%B1%D0%B5%D1%81%D0%BE%D0%B2%D0%B0.jpg', 'CC BY-SA 4.0'],
+      ['chien', 'Dalmatien rapportant un bâton', '1/19/Dalmatian_fetching_a_stick.jpg', 'CC BY-SA 4.0'],
+      ['chien', 'Golden retriever, Dülmen', 'b/bf/D%C3%BClmen%2C_Hausd%C3%BClmen%2C_Golden_Retriever_--_2022_--_5945.jpg', 'CC BY-SA 4.0'],
+      ['chien', 'Chien de berger', '2/22/Sara_-_Perro_Pastor_01.jpg', 'CC BY-SA 4.0'],
+      ['chien', 'Quatre chiens qui courent (Laos)', 'a/a5/Four_dogs_running_at_golden_hour_in_the_countryside_of_Don_Det_Laos.jpg', 'CC BY-SA 4.0'],
+      ['cheval', 'Poulain haflinger', '4/4e/Haflinger_Fohlen_01.jpg', 'CC BY-SA 2.5'],
+      ['cheval', 'Chevaux en estive, Pyrénées', '6/6b/Chevaux_estive_Pyrenees.jpg', 'CC BY-SA 3.0'],
+      ['cheval', 'Chevaux sauvages, monts Šar', '6/61/Wild_horses%2C_%C5%A0ar_Mountains.jpg', 'CC BY-SA 4.0'],
+      ['cheval', 'Garde républicaine à cheval, Paris', '9/97/Cavali%C3%A8re_Garde_R%C3%A9publicaine_Avenue_de_Friedland_14_juillet_2012.jpg', 'CC0'],
+      ['mouton', 'Moutons à l\'ombre d\'un arbre', '3/35/Sheep_lounging_in_the_shade_of_a_tree_at_R%C3%B6e_Castle.jpg', 'CC0'],
+      ['mouton', 'Troupeau de brebis basco-béarnaises', '0/06/Basco-bearnaise_brebis_troupeau.jpg', 'CC BY-SA 3.0'],
+      ['mouton', 'Brebis Lacaune, causse Méjean', '1/1c/Causse_Mejean_Lacaune_ovins.jpg', 'CC BY-SA 3.0'],
+      ['mouton', 'Moutons en ville, Münster', '2/23/M%C3%BCnster%2C_Domgasse_--_2014_--_4487.jpg', 'CC BY-SA 4.0'],
+      ['vache', 'Vache Fleckvieh, Oeschinensee', '8/8c/Cow_%28Fleckvieh_breed%29_Oeschinensee_Slaunger_2009-07-07.jpg', 'CC BY-SA 3.0'],
+      ['vache', 'Charolaises, Venezuela', 'c/cc/Charolais_cattle%2C_Sierra_Nevada%2C_Venezuela.jpg', 'CC0'],
+      ['vache', 'Vache suisse', 'f/fb/CH_cow_2.jpg', 'CC BY-SA 3.0'],
+      ['vache', 'Veau frison rouge et blanc', 'f/fb/New_born_Frisian_red_white_calf.jpg', 'CC BY-SA 3.0'],
+    ];
+    const COULEURS = { 15: '#ff7eb9', 16: '#ff3b30', 17: '#c792ff', 18: '#ff8a00', 19: '#2ecc40' };
+    const classeDe = (animal) => Number(Object.keys(ESPECES).find((c) => ESPECES[c].animal === animal));
+    const miniature = (chemin) => `https://upload.wikimedia.org/wikipedia/commons/thumb/${chemin}/960px-${chemin.split('/').pop()}`;
+    const page = (chemin) => `https://commons.wikimedia.org/wiki/File:${chemin.split('/').pop()}`;
+
+    const statut = document.getElementById('statut');
+    const grille = document.getElementById('grille');
+    const plein = document.getElementById('plein');
+    plein.addEventListener('click', () => { plein.style.display = 'none'; });
+
+    function charger(src) {
+      return new Promise((ok, ko) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => ok(img);
+        img.onerror = () => ko(new Error('image introuvable'));
+        img.src = src;
+      });
+    }
+
+    function dessiner(ctx, boites) {
+      for (const b of boites) {
+        const couleur = COULEURS[b.classe];
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = couleur;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        const e = ESPECES[b.classe];
+        const texte = `${e.animal} → ${e.nom} ${b.score.toFixed(2)}`;
+        ctx.font = '600 22px system-ui, sans-serif';
+        const w = ctx.measureText(texte).width + 10;
+        const y = Math.max(28, b.y);
+        ctx.fillStyle = couleur;
+        ctx.fillRect(b.x, y - 28, w, 28);
+        ctx.fillStyle = '#000';
+        ctx.fillText(texte, b.x + 5, y - 7);
+      }
+    }
+
+    const entree = await chargerDetecteur('../models/yolo11n/model.json');
+    const canvasEntree = document.createElement('canvas');
+    canvasEntree.width = entree.largeur;
+    canvasEntree.height = entree.hauteur;
+    const ctxEntree = canvasEntree.getContext('2d', { willReadFrequently: true });
+    statut.textContent = `Modèle chargé (entrée ${entree.largeur}×${entree.hauteur}, backend ${tf.getBackend()}). `
+      + 'Cadres : animaux détectés et créature qui les remplacera. Clic sur une image : plein écran, à viser avec l\'iPhone.';
+
+    let reussies = 0;
+    for (const [animal, titre, chemin, licence] of IMAGES) {
+      const figure = document.createElement('figure');
+      const canvas = document.createElement('canvas');
+      const legende = document.createElement('figcaption');
+      legende.innerHTML = `<span class="res">Analyse…</span><br>${titre} · ${licence} · `
+        + `<a href="${page(chemin)}" target="_blank" rel="noopener">source</a>`;
+      figure.append(canvas, legende);
+      grille.append(figure);
+      const res = legende.querySelector('.res');
+
+      try {
+        const img = await charger(miniature(chemin));
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        canvas.addEventListener('click', () => {
+          plein.querySelector('img').src = img.src;
+          plein.style.display = 'flex';
+        });
+
+        // Même préparation que le jeu, sur l'image entière (sans zoom).
+        const lb = letterbox(img.naturalWidth, img.naturalHeight, entree.largeur, entree.hauteur);
+        ctxEntree.fillStyle = 'rgb(114,114,114)';
+        ctxEntree.fillRect(0, 0, entree.largeur, entree.hauteur);
+        ctxEntree.drawImage(img, lb.dx, lb.dy, lb.dw, lb.dh);
+        const t0 = performance.now();
+        const boites = await detecter(canvasEntree);
+        const ms = performance.now() - t0;
+        const ecran = boites.map((b) => ({ ...versEcran(b, lb, img.naturalWidth, img.naturalHeight), score: b.score, classe: b.classe }));
+        dessiner(ctx, ecran);
+
+        const attendu = classeDe(animal);
+        const bons = ecran.filter((b) => b.classe === attendu);
+        const autres = ecran.filter((b) => b.classe !== attendu).map((b) => ESPECES[b.classe].animal);
+        if (bons.length) reussies++;
+        res.className = `res ${bons.length ? 'ok' : 'ko'}`;
+        res.textContent = (bons.length
+          ? `✓ ${bons.length} ${animal}${bons.length > 1 ? 's' : ''} (${bons.map((b) => b.score.toFixed(2)).join(', ')})`
+          : `✗ ${animal} non détecté`)
+          + (autres.length ? ` · aussi : ${autres.join(', ')}` : '') + ` · ${ms.toFixed(0)} ms`;
+      } catch (e) {
+        res.className = 'res ko';
+        res.textContent = `Erreur : ${e.message}`;
+      }
+    }
+    statut.textContent += ` — Bon animal détecté sur ${reussies}/${IMAGES.length} photos.`;
+
+    // Distance : la photo réduite (animal plus lointain) au centre d'un fond gris de même taille,
+    // analysée en vue entière puis sur la zone centrale comme le fait le jeu.
+    const ECHELLES = [1, 0.5, 0.25];
+    const section = document.createElement('section');
+    section.innerHTML = '<h2>Distance</h2><p>Meilleur score de l\'animal attendu (— = non détecté). '
+      + 'Vue = image entière dans le modèle ; Centre = zone centrale (moitié de la hauteur), comme le jeu.</p>';
+    const tableau = document.createElement('table');
+    tableau.innerHTML = `<thead><tr><th>Photo</th>${ECHELLES.map((e) => `<th>${e * 100} % vue</th><th>${e * 100} % centre</th>`).join('')}</tr></thead><tbody></tbody>`;
+    section.append(tableau);
+    document.body.append(section);
+    const vue = document.createElement('canvas');
+    const ctxVue = vue.getContext('2d');
+    const ratio = entree.largeur / entree.hauteur;
+
+    async function meilleurScore(source, z, classe) {
+      const lb = letterbox(z.w, z.h, entree.largeur, entree.hauteur);
+      ctxEntree.fillStyle = 'rgb(114,114,114)';
+      ctxEntree.fillRect(0, 0, entree.largeur, entree.hauteur);
+      ctxEntree.drawImage(source, z.x, z.y, z.w, z.h, lb.dx, lb.dy, lb.dw, lb.dh);
+      const boites = (await detecter(canvasEntree)).filter((b) => b.classe === classe);
+      return boites.length ? Math.max(...boites.map((b) => b.score)) : null;
+    }
+
+    for (const [animal, titre, chemin] of IMAGES) {
+      const ligne = document.createElement('tr');
+      ligne.innerHTML = `<td>${titre}</td>`;
+      tableau.tBodies[0].append(ligne);
+      let img;
+      try { img = await charger(miniature(chemin)); } catch { continue; }
+      vue.width = img.naturalWidth;
+      vue.height = img.naturalHeight;
+      for (const e of ECHELLES) {
+        ctxVue.fillStyle = 'rgb(128,128,128)';
+        ctxVue.fillRect(0, 0, vue.width, vue.height);
+        const w = vue.width * e;
+        const h = vue.height * e;
+        ctxVue.drawImage(img, (vue.width - w) / 2, (vue.height - h) / 2, w, h);
+        const classe = classeDe(animal);
+        const sVue = await meilleurScore(vue, { x: 0, y: 0, w: vue.width, h: vue.height }, classe);
+        const sCentre = await meilleurScore(vue, zoneDetection(null, vue.width, vue.height, ratio, 1), classe);
+        ligne.insertAdjacentHTML('beforeend',
+          `<td class="${sVue !== null ? 'ok' : 'ko'}">${sVue?.toFixed(2) ?? '—'}</td>`
+          + `<td class="${sCentre !== null ? 'ok' : 'ko'}">${sCentre?.toFixed(2) ?? '—'}</td>`);
+      }
+    }
+  </script>
+</body>
+</html>
