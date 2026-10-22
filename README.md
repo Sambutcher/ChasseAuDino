@@ -43,7 +43,8 @@ python3 tools/serve.py      # HTTPS sur https://<ip-du-pc>:8443 (certificat auto
 ```
 
 - `?simgps` simule la course (~3 m/s, environ 35 s pour 100 m) sans bouger.
-- `?debug` affiche images/s, détections/s, durée d'inférence, flux optique et espèce suivie.
+- `?debug` affiche images/s, détections/s, durée d'inférence, flux optique et espèce suivie,
+  et un bouton « Debug : +110 m » sur l'écran de course qui débloque aussitôt le tir.
 - `tests/bestiaire.html` montre les 5 créatures sans caméra : mimiques, explosion, fuite, et tir
   au viseur pour vérifier la silhouette.
 - `tests/mire.html` passe 20 vraies photos d'animaux (Wikimedia Commons, licences libres, chargées

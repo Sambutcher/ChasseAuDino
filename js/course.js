@@ -49,6 +49,14 @@ export function creerCourse({ distance = 100, precisionMax = 30, memoireMs = 100
       parcourue = 0;
     },
 
+    // Mode debug : recule le départ de `metres` vers le sud, comme si l'on avait déjà couru
+    // (un saut de la position elle-même serait rejeté par le filtre de vitesse).
+    reculerDepart(metres) {
+      if (!depart) return;
+      depart = { ...depart, lat: depart.lat - metres / 111195 };
+      if (retenue) parcourue = distanceM(depart, retenue);
+    },
+
     etat() {
       const phase = !lancee ? 'arret' : !depart ? 'gps' : parcourue >= distance ? 'fini' : 'course';
       return { phase, distance: parcourue, objectif: distance, precision: derniere ? derniere.precision : null };

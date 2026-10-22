@@ -37,6 +37,7 @@ const canvas = document.getElementById('hud');
 const pasDeTir = document.getElementById('pas-de-tir');
 const boutonTir = document.getElementById('position-tir');
 const erreurCamera = document.getElementById('erreur-camera');
+const boutonPasserCourse = document.getElementById('passer-course');
 
 // Pas de service worker sur le serveur de dev (adresse IP ou localhost) : avec le certificat
 // auto-signé, ses requêtes réseau échouent (« Load failed ») et il bloquerait toutes les pages
@@ -84,6 +85,10 @@ function lancerPartie(entree, creatures) {
   );
   course.demarrer(Date.now());
   pasDeTir.hidden = false;
+
+  // Debug : course faite d'un coup (départ reculé au-delà de DISTANCE_COURSE).
+  boutonPasserCourse.hidden = !DEBUG;
+  boutonPasserCourse.addEventListener('click', () => course.reculerDepart(DISTANCE_COURSE + 10));
 
   // --- Tir : caméra, suivi de la cible, détection. ---
   let suivi = creerSuivi();
