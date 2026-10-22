@@ -1,0 +1,122 @@
+:root {
+  --sat: env(safe-area-inset-top);
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: -apple-system, system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#video {
+  display: none;
+}
+
+#jeu {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  touch-action: none;
+}
+
+#accueil {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  text-align: center;
+  background: #000;
+}
+
+#accueil[hidden] {
+  display: none;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+#accueil p {
+  margin: 0;
+  color: #bbb;
+}
+
+#demarrer {
+  margin-top: 16px;
+  padding: 14px 40px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font: 600 18px -apple-system, system-ui, sans-serif;
+}
+
+#demarrer:disabled {
+  opacity: 0.5;
+}
+
+#statut {
+  min-height: 1.4em;
+  font-size: 14px;
+}
+
+#accueil #version {
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  font-size: 12px;
+  color: #555;
+}
+
+#pas-de-tir {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px max(24px, env(safe-area-inset-bottom));
+}
+
+#pas-de-tir[hidden] {
+  display: none;
+}
+
+#position-tir {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  border: 0;
+  border-radius: 16px;
+  background: #2ecc40;
+  color: #000;
+  font: 700 22px -apple-system, system-ui, sans-serif;
+}
+
+#position-tir:disabled {
+  background: #333;
+  color: #777;
+}
+
+#erreur-camera {
+  margin: 0;
+  min-height: 1.2em;
+  color: #ff6b5b;
+  font-size: 14px;
+  text-align: center;
+}

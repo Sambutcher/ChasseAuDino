@@ -1,0 +1,33 @@
+# Conversion de YOLO11n en TensorFlow.js (TensorFlow exige l'AVX, absent du PC de dev).
+# Résultat : artefact « yolo11n-tfjs » à copier dans models/yolo11n/.
+# Lancement manuel : gh workflow run export-model.yml -R Sambutcher/StreetBiathlon
+name: Export du modèle
+
+on:
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # < 8.4 : les versions suivantes remplacent l'export TF.js par LiteRT.
+      - name: Installer ultralytics (PyTorch CPU)
+        run: pip install "ultralytics<8.4" --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+      - name: Exporter
+        run: tools/export_model.sh
+      - name: Vérifier avec TF.js
+        run: |
+          npm install --no-save @tensorflow/tfjs-node@4.22.0
+          curl -sfLo bus.jpg https://ultralytics.com/images/bus.jpg
+          node tools/check_model.mjs models/yolo11n bus.jpg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yolo11n-tfjs
+          path: models/yolo11n/
