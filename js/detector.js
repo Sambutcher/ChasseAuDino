@@ -9,6 +9,8 @@ const SEUIL_IOU = 0.45;
 let modele = null;
 
 export async function chargerDetecteur(url) {
+  // Mémoire graphique de l'iPhone SE à la limite : textures libérées aussitôt, pas gardées en réserve.
+  tf.env().set('WEBGL_DELETE_TEXTURE_THRESHOLD', 0);
   await tf.setBackend('webgl');
   await tf.ready();
   modele = await tf.loadGraphModel(url);

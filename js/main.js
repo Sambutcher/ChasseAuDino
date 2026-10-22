@@ -99,6 +99,22 @@ function lancerPartie(entree, creatures) {
   let allumageCamera = false;
   let finSerieA = null; // instant du tir
   relancerAuRetour(video);
+
+  // Mémoire graphique saturée : iOS retire un contexte WebGL (détection arrêtée, image réduite).
+  // Rien à sauver : on prévient puis on recharge le jeu.
+  let contextePerdu = false;
+  const surContextePerdu = () => {
+    if (contextePerdu) return;
+    contextePerdu = true;
+    console.warn('Contexte WebGL perdu : rechargement');
+    setTimeout(() => location.reload(), 1500);
+  };
+  canvasCreatures.addEventListener('webglcontextlost', surContextePerdu);
+  try {
+    tf.backend().gpgpu.gl.canvas.addEventListener('webglcontextlost', surContextePerdu);
+  } catch (e) {
+    console.warn('Contexte de TensorFlow non surveillé :', e);
+  }
   let dernierTir = { resultat: null, t: -Infinity };
 
   const canvasEntree = document.createElement('canvas'); // entrée du modèle
@@ -303,6 +319,12 @@ function lancerPartie(entree, creatures) {
   }
 
   function image(t) {
+    if (contextePerdu) {
+      rendu.effacer();
+      rendu.message('Mémoire saturée, redémarrage…');
+      requestAnimationFrame(image);
+      return;
+    }
     if (finSerieA !== null && t - finSerieA > DELAI_FIN_SERIE_MS) passerEnCourse();
     if (etat.phase === 'course') {
       rendu.effacer();

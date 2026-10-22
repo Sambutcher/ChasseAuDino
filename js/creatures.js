@@ -25,7 +25,8 @@ const PALETTES = {
 // options.base : préfixe des chemins des modèles (page hors racine) ;
 // options.quandHumeur(espece) : la créature fait une mimique (pour le son).
 export async function creerCreatures(canvas, { base = '', quandHumeur = () => {} } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  // Sans anticrénelage et densité plafonnée : la mémoire graphique de l'iPhone SE est à la limite.
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
   renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(0, 1, 0, -1, -10000, 10000);
@@ -39,7 +40,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   function redimensionner() {
     largeur = window.innerWidth;
     hauteur = window.innerHeight;
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
     renderer.setSize(largeur, hauteur, false);
     camera.right = largeur;
     camera.bottom = -hauteur;
