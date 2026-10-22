@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   ESPECES, CLASSES, PERSONNAGES_VOITURE, especeDe, estVoiture, trouverClip, filtrerEspece, messageIssue,
-  profilRectangle, lacet,
 } from '../js/especes.js';
 import { decoder } from '../js/detector.js';
 
@@ -66,23 +65,6 @@ test('messageIssue accorde le genre', () => {
   assert.equal(messageIssue(ESPECES.cheval, 'enfuie'), 'La licorne s\'est enfuie !');
   assert.equal(messageIssue(ESPECES.mouton, 'enfuie'), 'Le dragon s\'est enfui !');
   assert.equal(messageIssue(ESPECES.barbare, 'explosee'), 'Le barbare a explosé !');
-});
-
-test('profilRectangle : étroit = face, large = profil, borné', () => {
-  const v = ESPECES.vache; // face 0,7, profil 1,6
-  assert.equal(profilRectangle(v, { w: 70, h: 100 }), 0);
-  assert.equal(profilRectangle(v, { w: 160, h: 100 }), 1);
-  assert.ok(Math.abs(profilRectangle(v, { w: 115, h: 100 }) - 0.5) < 1e-9);
-  assert.equal(profilRectangle(v, { w: 300, h: 100 }), 1);
-  assert.equal(profilRectangle(ESPECES.mage, { w: 240, h: 100 }), 1, 'voiture de profil');
-});
-
-test('lacet : face = 0, profil = ±π/2, sens inconnu → vers le centre', () => {
-  assert.equal(lacet(0, 1, 0.5), 0);
-  assert.equal(lacet(1, -1, 0.5), -Math.PI / 2);
-  assert.equal(lacet(1, 1, -0.5), Math.PI / 2);
-  assert.equal(lacet(1, 0, -0.3), -Math.PI / 2, 'à droite de l\'écran : regarde vers la gauche');
-  assert.equal(lacet(0.5, 0, 0), Math.PI / 4);
 });
 
 test('decoder : meilleure classe recherchée par ancre, seuil et NMS', () => {

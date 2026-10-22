@@ -1,8 +1,7 @@
 # Chasse au dino
 
 Course et tir dans la rue, sur téléphone : la caméra cherche les **animaux** et les **voitures** et
-les change en **créatures 3D**, tournées comme la cible (profil ou face, regard à gauche ou à
-droite). Une seule cartouche : touchée, la créature **explose** ; ratée, elle **s'enfuit**.
+les change en **créatures 3D**. Une seule cartouche : touchée, la créature **explose** ; ratée, elle **s'enfuit**.
 
 | Animal | Créature | Ton |
 |---|---|---|
@@ -27,12 +26,6 @@ Les **voitures** deviennent un héros ou un squelette selon leur couleur, comme 
 
 Les créatures kawaii sautillent, font coucou et explosent en étoiles colorées ; les méchantes
 grognent, ont les yeux rouges et explosent en flammes et fumée.
-
-**Orientation** : la posture des animaux (yeux, nez, base de la queue…) est lue par un second
-modèle, RTMPose, environ trois fois par seconde, sur le processeur (WebAssembly, dans un Web
-Worker : en WebGL il saturait la mémoire graphique de l'iPhone SE) ; il se charge pendant la
-première course. À défaut (voitures, modèle pas encore chargé, posture illisible, `?sansposture`),
-la forme du rectangle dit profil ou face et la créature regarde vers le centre.
 
 PWA installable, jouable **hors ligne**, pensée d'abord pour iPhone (iPhone SE 3ᵉ gén.).
 Inspirée de [Street Biathlon](https://github.com/Sambutcher/StreetBiathlon), dont elle reprend le socle.
@@ -63,14 +56,6 @@ python3 tools/serve.py      # HTTPS sur https://<ip-du-pc>:8443 (certificat auto
 ```
 
 - `?simgps` simule la course (~3 m/s, environ 35 s pour 100 m) sans bouger.
-- `?debug` affiche images/s, détections/s, durées d'inférence (détection, posture), flux optique,
-  espèce suivie, regard, profil, couleur de la voiture et points de posture, et un bouton « Debug : +110 m » sur l'écran de course qui débloque aussitôt le tir.
-- `tests/bestiaire.html` montre les 13 créatures sans caméra : mimiques, explosion, fuite,
-  orientations (← profil, face, profil →) et tir au viseur pour vérifier la silhouette.
-- `tests/mire.html` passe 27 vraies photos d'animaux et de voitures (Wikimedia Commons, licences
-  libres, chargées en ligne) dans le détecteur : créature choisie, couleur des voitures, points de
-  posture et regard des animaux, et tableau de détection selon la distance. Clic = plein écran,
-  pour viser l'écran du PC avec l'iPhone en jeu.
 
 Sur l'iPhone, ouvrir l'adresse affichée et accepter le certificat. Le mode hors ligne (service
 worker) ne se teste que sur GitHub Pages : en dev (adresse IP ou localhost), la page n'enregistre
@@ -82,11 +67,9 @@ resté : Réglages → Apps → Safari → Avancé → Données des sites web �
 | Fichier | Rôle |
 |---|---|
 | `js/main.js` | démarrage, boucle d'affichage, tir |
-| `js/especes.js` | bestiaire : cible COCO → créature, couleur → personnage, orientation (pur, testé) |
+| `js/especes.js` | bestiaire : cible COCO → créature, couleur → personnage (pur, testé) |
 | `js/couleur.js` | couleur d'une voiture d'après sa carrosserie (pur, testé) |
-| `js/posture.js` | posture RTMPose : points clés, sens du regard, profil (décodage pur, testé) |
-| `js/posture-worker.js` | Web Worker : RTMPose dans ONNX Runtime Web (WebAssembly) |
-| `js/creatures.js` | créatures three.js : placement, orientation, mimiques, licorne, explosion, fuite, test de touche |
+| `js/creatures.js` | créatures three.js : placement, mimiques, licorne, explosion, fuite, test de touche |
 | `js/sons.js` | bruitages Web Audio synthétisés |
 | `js/camera.js` | caméra arrière |
 | `js/detector.js` | YOLO11n via TensorFlow.js : décodage des 6 classes (voiture, 5 animaux), NMS |
@@ -108,13 +91,6 @@ puis créer la release (`gh release create vX.Y.Z`).
 - Détection : `models/yolo11n/`, YOLO11n (COCO) converti en TensorFlow.js, entrée 224×384,
   repris de Street Biathlon. Classes utilisées : voiture 2, chat 15, chien 16, cheval 17,
   mouton 18, vache 19.
-- Posture : `models/rtmpose-onnx/rtmpose-int8.onnx` (13,7 Mo), RTMPose-m (MMPose) entraîné sur
-  AP-10K (17 points clés animaux), figé en 1×3×256×256 et poids quantifiés en int8 (1 px d'écart
-  avec float32) par le workflow manuel « Export du modèle de posture »
-  (`gh workflow run export-posture.yml -R Sambutcher/ChasseAuDino --ref <branche>`) ; copier
-  l'artefact dans `models/`. Exécuté par ONNX Runtime Web 1.20.1 (`vendor/onnxruntime/`,
-  WebAssembly, un seul thread) dans `js/posture-worker.js`. Sans lui, le jeu marche
-  (orientation par la forme du rectangle).
 - Créatures : `models/creatures/*.glb`, low-poly animés. Les personnages KayKit sont allégés
   (7 animations, un équipement) par `python3 tools/alleger_kaykit.py <dossier des .glb KayKit>`.
   Les icônes se régénèrent avec `python3 tools/icons.py` (Pillow).
@@ -124,7 +100,6 @@ puis créer la release (`gh release create vX.Y.Z`).
 - Chasse au dino : **AGPL-3.0** (voir `LICENSE`), imposée par le modèle de détection.
 - YOLO11n © Ultralytics, AGPL-3.0.
 - TensorFlow.js 4.22.0 (`vendor/tf.min.js`), Apache-2.0.
-- ONNX Runtime Web 1.20.1 (`vendor/onnxruntime/`), © Microsoft, MIT (`vendor/onnxruntime/LICENSE.txt`).
 - three.js 0.170.0 (`vendor/three.module.min.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`), MIT
   (`vendor/three-LICENSE.txt`).
 - Créatures par [Quaternius](https://quaternius.com), domaine public (CC0), via
@@ -133,6 +108,10 @@ puis créer la release (`gh release create vX.Y.Z`).
   (base de la licorne), Wolf (le loup). Merci !
 - Héros et squelettes par [Kay Lousberg](https://www.kaylousberg.com) (KayKit Adventurers et
   Skeletons Character Packs), domaine public (CC0). Merci !
-- RTMPose / [MMPose](https://github.com/open-mmlab/mmpose) © OpenMMLab, Apache-2.0 ; entraîné sur
-  [AP-10K](https://github.com/AlexTheBad/AP-10K) (CC-BY-4.0) après pré-entraînement AIC + COCO.
-- `tools/chien.jpg` : « Dalmatian fetching a stick », Wikimedia Commons, CC BY-SA 4.0.
+
+## Idées pour plus tard
+
+- Orienter les créatures comme la cible (profil/face, regard). Essai avec RTMPose (posture
+  animale) sur la branche `avec-posture` : trop lourd pour l'iPhone SE (mémoire graphique, puis
+  plantage même en WebAssembly).
+- Orientation des voitures : aucun modèle libre et léger trouvé.

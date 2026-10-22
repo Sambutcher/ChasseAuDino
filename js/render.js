@@ -157,45 +157,9 @@ export function creerRendu(canvasVideo, canvas) {
     ctx.restore();
   }
 
-  // Cadre de la zone analysée par le modèle (mode debug).
-  function zone(z) {
-    ctx.save();
-    ctx.setLineDash([6, 4]);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = z.type === 'cible' ? '#0f0' : z.type === 'centre' ? '#0cf' : '#ff0';
-    ctx.strokeRect(z.x + 1, z.y + 1, z.w - 2, z.h - 2);
-    ctx.restore();
-  }
-
-  // Points clés de la posture (mode debug) : nez rouge, base de la queue bleue, autres en vert ;
-  // les points peu sûrs ne sont pas dessinés.
-  function points(liste) {
-    ctx.save();
-    liste.forEach((p, i) => {
-      if (p.score < 0.3) return;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, i === 2 || i === 4 ? 6 : 4, 0, 2 * Math.PI);
-      ctx.fillStyle = i === 2 ? '#ff3b30' : i === 4 ? '#0a84ff' : '#0f0';
-      ctx.fill();
-    });
-    ctx.restore();
-  }
-
-  function diagnostic(lignes) {
-    ctx.save();
-    ctx.font = '12px ui-monospace, Menlo, monospace';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(largeur - 150, margeHaut + 12, 142, lignes.length * 15 + 8);
-    ctx.fillStyle = '#0f0';
-    lignes.forEach((l, i) => ctx.fillText(l, largeur - 14, margeHaut + 16 + i * 15));
-    ctx.restore();
-  }
-
   return {
     get largeur() { return largeur; },
     get hauteur() { return hauteur; },
-    video, effacer, viseur, cartouches, message, flash, course, zone, points, diagnostic,
+    video, effacer, viseur, cartouches, message, flash, course,
   };
 }

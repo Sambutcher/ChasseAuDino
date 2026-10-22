@@ -11,7 +11,7 @@ export const DUREE_EXPLOSION = 1.8; // s
 // d'une image réduite, recalages des détections), la créature la suit en douceur.
 const TAU_POSITION = 0.12; // s
 const TAU_TAILLE = 0.3; // s
-const TAU_LACET = 0.25; // s : en changeant de côté, la créature pivote en passant par la face
+const TAU_LACET = 0.25; // s : la créature pivote en douceur quand elle traverse l'écran
 const SAUT = 1.5; // écart (en hauteurs de créature) au-delà duquel on se recale d'un coup
 const TRIANGLES_PAR_ECLAT = 4;
 const TOLERANCE_TIR = 8; // px : un tir qui frôle la silhouette compte
@@ -80,9 +80,8 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   }
 
   // Créature posée sur la boîte écran de la cible : pieds en bas (ou au centre si elle vole),
-  // hauteur de la boîte, largeur bornée. lacetVoulu : orientation de la cible (radians,
-  // 0 = face, +π/2 = regarde à droite) ; sans orientation, elle se tourne vers le centre.
-  function montrer(cle, boite, t = performance.now(), lacetVoulu = null) {
+  // hauteur de la boîte, largeur bornée, légèrement tournée vers le centre de l'écran.
+  function montrer(cle, boite, t = performance.now()) {
     if (mode === 'fuite' || mode === 'explosion') return;
     const m = choisir(cle, t);
     if (!m) return;
@@ -91,7 +90,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     const x = boite.x + boite.w / 2;
     const y = vol ? boite.y + boite.h / 2 : boite.y + boite.h;
     const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - x) / (largeur / 2)));
-    const l = lacetVoulu ?? 0.6 * versCentre;
+    const l = 0.6 * versCentre;
     // Largeur de la créature (en hauteurs) sous cet angle, pour borner sa taille à la boîte.
     const ratio = m.ratioFace * Math.abs(Math.cos(l)) + m.ratioProfil * Math.abs(Math.sin(l));
     const s = Math.max(40, Math.min(boite.h * (vol ? 0.95 : 1.05), (boite.w * 1.6) / ratio));

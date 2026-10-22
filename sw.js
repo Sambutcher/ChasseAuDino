@@ -1,7 +1,7 @@
 // Service worker : tout le jeu est mis en cache à l'installation pour jouer hors ligne.
 // Changer VERSION à chaque mise en ligne (et dans index.html, vérifié par tests/pwa.test.js),
 // sinon les téléphones gardent l'ancienne version.
-const VERSION = '0.2.0';
+const VERSION = '1.0.0';
 const CACHE = `chasse-au-dino-${VERSION}`;
 
 const FICHIERS = [
@@ -30,16 +30,10 @@ const FICHIERS = [
   'js/creatures.js',
   'js/sons.js',
   'js/couleur.js',
-  'js/posture.js',
-  'js/posture-worker.js',
   'models/yolo11n/model.json',
   'models/yolo11n/group1-shard1of3.bin',
   'models/yolo11n/group1-shard2of3.bin',
   'models/yolo11n/group1-shard3of3.bin',
-  'models/rtmpose-onnx/rtmpose-int8.onnx',
-  'vendor/onnxruntime/ort.wasm.min.mjs',
-  'vendor/onnxruntime/ort-wasm-simd-threaded.mjs',
-  'vendor/onnxruntime/ort-wasm-simd-threaded.wasm',
   'models/creatures/dino.glb',
   'models/creatures/licorne.glb',
   'models/creatures/loup.glb',

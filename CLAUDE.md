@@ -5,16 +5,13 @@
 - PWA **vanilla JS sans build** (modules ES), cible iPhone SE 3ᵉ gén. (Safari), hors ligne.
   Ne pas introduire de bundler ni de framework. Licence AGPL-3.0.
 - Partie = course (100 m à vol d'oiseau au GPS, caméra éteinte) → « Position de tir » → **une seule
-  cartouche** : la créature touchée explose, ratée elle s'enfuit → course… `?simgps`, `?debug`.
+  cartouche** : la créature touchée explose, ratée elle s'enfuit → course… `?simgps` simule la course.
 - Voitures (COCO 2) → héros / squelettes KayKit (CC0) selon la couleur de la carrosserie
   (`js/couleur.js`, `PERSONNAGES_VOITURE`) ; modèles allégés par `tools/alleger_kaykit.py`.
-- Orientation (profil/face, regard gauche/droite) : posture RTMPose AP-10K des animaux
-  (`js/posture.js`, modèle ONNX int8 `models/rtmpose-onnx/` préparé par le workflow
-  `export-posture.yml`, exécuté par ONNX Runtime Web en WebAssembly dans `js/posture-worker.js` :
-  **pas en WebGL**, RTMPose y saturait la mémoire graphique de l'iPhone SE ; chargé pendant la
-  1re course, `?sansposture` pour s'en passer),
-  sinon forme du rectangle et regard vers le centre ; pas de modèle d'orientation pour les voitures
-  (aucun libre et léger trouvé). Espèces désignées par une clé (`'vache'`, `'mage'`…).
+- v1 stable (branche `v1-stable-sans-posture`) : YOLO seul, sans orientation, sans outils de test
+  ni debug. Les essais de posture RTMPose restent sur la branche `avec-posture` (plantait sur
+  iPhone SE : mémoire graphique en WebGL, puis encore en WebAssembly). Espèces désignées par une
+  clé (`'vache'`, `'mage'`…).
 - Animaux COCO détectés par le YOLO11n existant (aucun réentraînement), remplacés par une créature 3D
   (table `ESPECES` de `js/especes.js`) : chat→lapin, vache→dinosaure, cheval→licorne (kawaii) ;
   chien→loup, mouton→dragon (méchants, yeux rougeoyants : `yeux` dans ESPECES). Modèles Quaternius CC0 dans `models/creatures/`.
@@ -24,12 +21,10 @@
 - Logique pure (`js/game.js`, `js/especes.js`, `js/geometry.js`, `js/tracker.js`, `js/flow.js`,
   `js/course.js`) et préparation des modèles (`preparer`, `creerExplosion` de `js/creatures.js`,
   three.js tourne sous Node sans WebGL) testées par `node --test tests/` (Node 18 apt, pas de npm).
-- `tests/bestiaire.html` : bac à sable des créatures (mimiques, explosion, fuite, tir) sans caméra.
-  `tests/mire.html` : détection sur 20 vraies photos d'animaux (Wikimedia Commons, en ligne).
 - Tout fichier servi doit figurer dans `FICHIERS` de `sw.js` ; `VERSION` (sw.js + index.html)
   change à chaque mise en ligne. `tests/pwa.test.js` vérifie les deux.
 - Dev sur iPhone : `python3 tools/serve.py` (HTTPS auto-signé, IP locale 192.168.1.147:8443).
-- Mise en ligne : GitHub Pages sur `main` (https://sambutcher.github.io/ChasseAuDino/),
-  merge fait par Samuel ; release `vX.Y.Z` ensuite.
+- Mise en ligne : GitHub Pages sur la branche `v1-stable-sans-posture`
+  (https://sambutcher.github.io/ChasseAuDino/) ; release `vX.Y.Z` ensuite.
 - Ne pas tester les pages dans Chromium : Samuel teste lui-même (navigateur, iPhone).
 - Langue du code et des textes : français.

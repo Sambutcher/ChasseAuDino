@@ -110,18 +110,3 @@ test('nouveau départ : remise à zéro', () => {
   c.ajouter(fix(150, 54000));
   assert.ok(Math.abs(c.etat().distance - 38) < 0.5, 'depuis la position à 112 m');
 });
-
-test('debug : reculer le départ débloque le tir, la course continue normalement', () => {
-  const c = creerCourse();
-  c.reculerDepart(110); // sans départ : sans effet
-  c.ajouter(fix(0, 0));
-  c.demarrer(0);
-  c.ajouter(fix(6, 2000));
-  c.reculerDepart(110);
-  assert.equal(c.etat().phase, 'fini');
-  assert.ok(Math.abs(c.etat().distance - 116) < 0.5);
-  c.ajouter(fix(9, 3000));
-  assert.ok(Math.abs(c.etat().distance - 119) < 0.5, 'les positions suivantes comptent depuis le départ reculé');
-  c.demarrer(4000);
-  assert.equal(c.etat().distance, 0, 'nouveau départ normal');
-});
