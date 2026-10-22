@@ -95,8 +95,10 @@ export function orientation(points, largeur, seuil = SEUIL_POINT) {
 
   const dx = tete.x - arriere.x;
   let profil = Math.min(1, Math.abs(dx) / (0.6 * largeur));
-  // Deux yeux nettement écartés : l'animal regarde l'objectif.
-  if (yeux[0] && yeux[1] && Math.abs(yeux[0].x - yeux[1].x) > 0.08 * largeur) profil = Math.min(profil, 0.35);
+  // Deux yeux nettement écartés, tête et queue presque alignées : l'animal regarde l'objectif.
+  // (De profil, RTMPose place souvent aussi l'œil caché : les yeux seuls ne suffisent pas.)
+  const yeuxEcartes = yeux[0] && yeux[1] && Math.abs(yeux[0].x - yeux[1].x) > 0.08 * largeur;
+  if (yeuxEcartes && Math.abs(dx) < 0.25 * largeur) profil = Math.min(profil, 0.35);
   const sens = Math.abs(dx) > 0.1 * largeur ? Math.sign(dx) : 0;
   return { sens, profil, fiable: true };
 }

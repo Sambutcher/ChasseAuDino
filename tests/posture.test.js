@@ -38,9 +38,20 @@ test('orientation : face (deux yeux écartés), dos (queue sans tête), rien de 
   assert.ok(face.profil < 0.4);
   const troisQuarts = orientation(points({ nez: [70, 60], oeilG: [60, 40], oeilD: [80, 40], queue: [20, 80] }), 100);
   assert.equal(troisQuarts.sens, 1);
-  assert.ok(troisQuarts.profil <= 0.35, 'deux yeux visibles : plafonné vers la face');
+  assert.ok(troisQuarts.profil > 0.7, 'deux yeux visibles mais tête loin de la queue : de profil');
+  const presqueFace = orientation(points({ nez: [60, 60], oeilG: [45, 40], oeilD: [70, 40], queue: [45, 80] }), 100);
+  assert.ok(presqueFace.profil <= 0.35, 'deux yeux écartés, tête au-dessus de la queue : de face');
   assert.deepEqual(orientation(points({ queue: [50, 50] }), 100), { sens: 0, profil: 0, fiable: true });
   assert.deepEqual(orientation(points({}), 100), { sens: 0, profil: 0, fiable: false });
+});
+
+test('orientation sur les points réels de RTMPose (dalmatien de profil, tourné vers la droite)', () => {
+  // Sortie du modèle converti sur tools/chien.jpg (models/rtmpose-reference, workflow export-posture).
+  const reels = [[152, 84], [137, 83], [150, 96], [124, 96], [60, 92], [131, 119], [142, 140], [151, 162],
+    [104, 118], [126, 128], [131, 147], [78, 135], [54, 148], [45, 170], [52, 118], [32, 138], [21, 158]]
+    .map(([x, y]) => ({ x, y, score: 0.9 }));
+  const o = orientation(reels, 140); // chien d'environ 140 px de large dans l'entrée 256×256
+  assert.deepEqual([o.sens, o.profil, o.fiable], [1, 1, true]);
 });
 
 test('combiner : profil moyen, sens majoritaire, le plus récent à égalité', () => {

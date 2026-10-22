@@ -26,9 +26,11 @@ test('modules, bibliothèques, créatures et fichiers du modèle dans le cache',
   const dossier = (d) => readdirSync(new URL(`../${d}/`, import.meta.url)).map((f) => `${d}/${f}`);
   const servis = [...dossier('js'), ...dossier('vendor').filter((f) => f.endsWith('.js')), ...dossier('models/creatures')];
   for (const f of servis) assert.ok(fichiersCache.includes(f), `${f} manque dans FICHIERS de sw.js`);
-  const modele = JSON.parse(lire('models/yolo11n/model.json'));
-  for (const f of modele.weightsManifest.flatMap((g) => g.paths)) {
-    assert.ok(fichiersCache.includes(`models/yolo11n/${f}`), `models/yolo11n/${f} manque dans FICHIERS de sw.js`);
+  for (const dossierModele of ['models/yolo11n', 'models/rtmpose-ap10k']) {
+    const modele = JSON.parse(lire(`${dossierModele}/model.json`));
+    for (const f of ['model.json', ...modele.weightsManifest.flatMap((g) => g.paths)]) {
+      assert.ok(fichiersCache.includes(`${dossierModele}/${f}`), `${dossierModele}/${f} manque dans FICHIERS de sw.js`);
+    }
   }
 });
 
