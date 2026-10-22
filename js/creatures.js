@@ -11,6 +11,7 @@ export const DUREE_EXPLOSION = 1.8; // s
 // d'une image réduite, recalages des détections), la créature la suit en douceur.
 const TAU_POSITION = 0.12; // s
 const TAU_TAILLE = 0.3; // s
+const TAU_LACET = 0.25; // s : en changeant de côté, la créature pivote en passant par la face
 const SAUT = 1.5; // écart (en hauteurs de créature) au-delà duquel on se recale d'un coup
 const TRIANGLES_PAR_ECLAT = 4;
 const TOLERANCE_TIR = 8; // px : un tir qui frôle la silhouette compte
@@ -64,10 +65,10 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   let fuite = null; // { sens, delai }
   let explosion = null;
   let aEffacer = false; // une image vide reste à rendre
-  let affiche = null; // { x, y, s, t } : placement lissé de la créature courante
+  let affiche = null; // { x, y, s, lacet, t } : placement lissé de la créature courante
 
-  function choisir(classe, t) {
-    const m = modeles[classe];
+  function choisir(cle, t) {
+    const m = modeles[cle];
     if (!m || m === courante) return m;
     cacher();
     courante = m;
@@ -78,33 +79,37 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     return m;
   }
 
-  // Créature posée sur la boîte écran de l'animal : pieds en bas (ou au centre si elle vole),
-  // hauteur de la boîte, largeur bornée, tournée vers le centre de l'écran.
-  function montrer(classe, boite, t = performance.now()) {
+  // Créature posée sur la boîte écran de la cible : pieds en bas (ou au centre si elle vole),
+  // hauteur de la boîte, largeur bornée. lacetVoulu : orientation de la cible (radians,
+  // 0 = face, +π/2 = regarde à droite) ; sans orientation, elle se tourne vers le centre.
+  function montrer(cle, boite, t = performance.now(), lacetVoulu = null) {
     if (mode === 'fuite' || mode === 'explosion') return;
-    const m = choisir(classe, t);
+    const m = choisir(cle, t);
     if (!m) return;
     mode = 'suivi';
     const { vol } = m.espece;
-    let s = boite.h * (vol ? 0.95 : 1.05);
-    s = Math.max(40, Math.min(s, (boite.w * 1.6) / m.ratio));
     const x = boite.x + boite.w / 2;
     const y = vol ? boite.y + boite.h / 2 : boite.y + boite.h;
+    const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - x) / (largeur / 2)));
+    const l = lacetVoulu ?? 0.6 * versCentre;
+    // Largeur de la créature (en hauteurs) sous cet angle, pour borner sa taille à la boîte.
+    const ratio = m.ratioFace * Math.abs(Math.cos(l)) + m.ratioProfil * Math.abs(Math.sin(l));
+    const s = Math.max(40, Math.min(boite.h * (vol ? 0.95 : 1.05), (boite.w * 1.6) / ratio));
     if (!affiche || Math.hypot(x - affiche.x, y - affiche.y) > affiche.s * SAUT) {
-      affiche = { x, y, s, t };
+      affiche = { x, y, s, lacet: l, t };
     } else {
       const dt = Math.min(0.1, Math.max(0, (t - affiche.t) / 1000));
       affiche = {
         x: lisserVers(affiche.x, x, dt, TAU_POSITION),
         y: lisserVers(affiche.y, y, dt, TAU_POSITION),
         s: lisserVers(affiche.s, s, dt, TAU_TAILLE),
+        lacet: lisserVers(affiche.lacet, l, dt, TAU_LACET),
         t,
       };
     }
     m.pivot.position.set(affiche.x, -affiche.y, 0);
     m.pivot.scale.setScalar(affiche.s);
-    const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - affiche.x) / (largeur / 2)));
-    m.pivot.rotation.set(0.12, 0.6 * versCentre, 0);
+    m.pivot.rotation.set(0.12, affiche.lacet, 0);
   }
 
   function cacher() {
@@ -152,11 +157,13 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     courante.pivot.visible = false;
   }
 
-  // La créature pivote vers le bord le plus proche et s'en va en courant (en volant : vers le haut).
+  // La créature part en courant (en volant : vers le haut) du côté où elle regarde, ou à défaut
+  // vers le bord le plus proche.
   function fuir() {
     if (mode !== 'suivi' || !courante) return;
     mode = 'fuite';
-    fuite = { sens: courante.pivot.position.x < largeur / 2 ? -1 : 1, delai: 0.2 };
+    const regard = Math.abs(courante.pivot.rotation.y) > 0.3 ? Math.sign(courante.pivot.rotation.y) : 0;
+    fuite = { sens: regard || (courante.pivot.position.x < largeur / 2 ? -1 : 1), delai: 0.2 };
     courante.mixer.stopAllAction();
     courante.fuite?.reset().setEffectiveTimeScale(1.3).play();
   }
@@ -173,7 +180,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
 
   function avancerFuite(dt) {
     const p = courante.pivot;
-    const cible = fuite.sens * Math.PI / 2 - (courante.espece.cap ?? 0);
+    const cible = fuite.sens * Math.PI / 2;
     p.rotation.y += (cible - p.rotation.y) * Math.min(1, dt * 12);
     fuite.delai -= dt;
     if (fuite.delai > 0) return;
@@ -240,28 +247,28 @@ export function preparer(gltf, espece) {
   });
   if (espece.teintes) teindre(modele, espece.teintes);
   if (espece.corne) licorne(modele);
-  if (espece.ton === 'mechant') yeuxRouges(modele, espece.yeux ?? 'Eye_White');
+  if (espece.ton === 'mechant') yeuxRouges(modele, espece.yeux ?? { materiau: 'Eye_White' });
   mixer.stopAllAction();
 
-  const oriente = new THREE.Group();
-  oriente.add(modele);
-  oriente.rotation.y = espece.cap ?? 0;
-  oriente.updateMatrixWorld(true);
-  const bb = new THREE.Box3().setFromObject(oriente);
+  const bb = new THREE.Box3().setFromObject(modele);
   const taille = bb.getSize(new THREE.Vector3());
-  oriente.position.sub(new THREE.Vector3(
+  modele.position.sub(new THREE.Vector3(
     (bb.min.x + bb.max.x) / 2,
     espece.vol ? (bb.min.y + bb.max.y) / 2 : bb.min.y,
     (bb.min.z + bb.max.z) / 2,
   ));
   const norme = new THREE.Group();
-  norme.add(oriente);
+  norme.add(modele);
   norme.scale.setScalar(1 / taille.y);
   const pivot = new THREE.Group();
   pivot.add(norme);
   pivot.visible = false;
 
-  return { espece, pivot, mixer, attente, humeurs, fuite: action(espece.clips.fuite), ratio: taille.x / taille.y };
+  return {
+    espece, pivot, mixer, attente, humeurs, fuite: action(espece.clips.fuite),
+    ratioFace: taille.x / taille.y, // largeur vue de face, en hauteurs
+    ratioProfil: taille.z / taille.y, // largeur vue de profil
+  };
 }
 
 // Nouvelles couleurs, par nom de matériau.
@@ -348,15 +355,25 @@ function arcEnCiel(mesh) {
 }
 
 // Méchants : yeux rouges incandescents.
-function yeuxRouges(modele, matiere) {
+// yeux : { materiau } (matériau des yeux) ou { objet } (morceau du nom de l'objet des yeux, dont
+// le matériau, partagé avec tout le corps, est alors dupliqué).
+function yeuxRouges(modele, { materiau, objet }) {
+  const allumer = (m) => {
+    m.color.set('#330000');
+    m.map = null; // pas de texture : rouge uni
+    m.emissive?.set('#ff2a00');
+    m.emissiveIntensity = 2;
+  };
   modele.traverse((o) => {
     if (!o.isMesh) return;
-    for (const m of [].concat(o.material)) {
-      if (m.name !== matiere) continue;
-      m.color.set('#330000');
-      m.emissive?.set('#ff2a00');
-      m.emissiveIntensity = 2;
+    if (objet) {
+      if (!o.name.includes(objet)) return;
+      o.material = [].concat(o.material).map((m) => m.clone());
+      if (o.material.length === 1) [o.material] = o.material;
+      [].concat(o.material).forEach(allumer);
+      return;
     }
+    for (const m of [].concat(o.material)) if (m.name === materiau) allumer(m);
   });
 }
 
@@ -377,11 +394,13 @@ export function creerExplosion(m, textures) {
     const g = o.geometry;
     const pos = g.attributes.position;
     const col = g.attributes.color;
+    const uv = g.attributes.uv;
     const total = g.index ? g.index.count : pos.count;
     const groupes = g.groups.length ? g.groups : [{ start: 0, count: total, materialIndex: 0 }];
     const mats = [].concat(o.material);
     for (const gr of groupes) {
       const mat = mats[gr.materialIndex] ?? mats[0];
+      const lireTexture = uv ? lecteurTexture(mat.map) : null;
       const fin = Math.min(gr.start + gr.count, total);
       for (let k = gr.start; k < fin; k++) {
         const i = g.index ? g.index.getX(k) : k;
@@ -389,6 +408,7 @@ export function creerExplosion(m, textures) {
         sommets.push(v.x, v.y, v.z);
         c.copy(mat.color);
         if (mat.vertexColors && col) c.multiply(new THREE.Color(col.getX(i), col.getY(i), col.getZ(i)));
+        if (lireTexture) c.multiply(lireTexture(uv.getX(i), uv.getY(i)));
         couleurs.push(c.r, c.g, c.b);
       }
     }
@@ -526,6 +546,31 @@ export function creerExplosion(m, textures) {
   }
 
   return { groupe, maj, liberer };
+}
+
+// Couleur d'une texture aux coordonnées (u, v), pour colorer les éclats des créatures texturées
+// (personnages KayKit). Pixels lus une fois par texture ; null hors navigateur ou sans image.
+const pixelsTextures = new WeakMap();
+function lecteurTexture(map) {
+  const image = map?.image;
+  if (!image?.width || typeof document === 'undefined' || !document.createElement) return null;
+  let px = pixelsTextures.get(map);
+  if (!px) {
+    const toile = document.createElement('canvas');
+    toile.width = image.width;
+    toile.height = image.height;
+    const ctx = toile.getContext('2d');
+    ctx.drawImage(image, 0, 0);
+    px = { data: ctx.getImageData(0, 0, toile.width, toile.height).data, w: toile.width, h: toile.height };
+    pixelsTextures.set(map, px);
+  }
+  const c = new THREE.Color();
+  return (u, v) => {
+    const x = Math.min(px.w - 1, Math.max(0, Math.floor(u * px.w)));
+    const y = Math.min(px.h - 1, Math.max(0, Math.floor((map.flipY ? 1 - v : v) * px.h)));
+    const i = (y * px.w + x) * 4;
+    return c.setRGB(px.data[i] / 255, px.data[i + 1] / 255, px.data[i + 2] / 255, THREE.SRGBColorSpace);
+  };
 }
 
 function texture(dessin) {

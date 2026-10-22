@@ -74,6 +74,23 @@ export function dansRect(point, r) {
   return point.x >= r.x && point.x <= r.x + r.w && point.y >= r.y && point.y <= r.y + r.h;
 }
 
+// Rectangle source `src` (pixels vidéo) à dessiner sur une destination dw×dh, rogné aux bords de
+// la vidéo (vw×vh) : renvoie les arguments de drawImage pour la partie visible, ou null.
+// Safari dessine mal une source qui déborde de l'image.
+export function rogner(src, vw, vh, dw, dh) {
+  const kx = dw / src.sw;
+  const ky = dh / src.sh;
+  const x0 = Math.max(src.sx, 0);
+  const y0 = Math.max(src.sy, 0);
+  const x1 = Math.min(src.sx + src.sw, vw);
+  const y1 = Math.min(src.sy + src.sh, vh);
+  if (x1 <= x0 || y1 <= y0) return null;
+  return {
+    sx: x0, sy: y0, sw: x1 - x0, sh: y1 - y0,
+    dx: (x0 - src.sx) * kx, dy: (y0 - src.sy) * ky, dw: (x1 - x0) * kx, dh: (y1 - y0) * ky,
+  };
+}
+
 // Lissage exponentiel indépendant de la cadence : après `dt` secondes, la valeur a parcouru
 // 1 − e^(−dt/tau) de l'écart vers la cible (63 % au bout de tau).
 export function lisserVers(actuelle, cible, dt, tau) {

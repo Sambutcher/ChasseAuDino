@@ -163,6 +163,20 @@ export function creerRendu(canvasVideo, canvas) {
     ctx.restore();
   }
 
+  // Points clés de la posture (mode debug) : nez rouge, base de la queue bleue, autres en vert ;
+  // les points peu sûrs ne sont pas dessinés.
+  function points(liste) {
+    ctx.save();
+    liste.forEach((p, i) => {
+      if (p.score < 0.3) return;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, i === 2 || i === 4 ? 6 : 4, 0, 2 * Math.PI);
+      ctx.fillStyle = i === 2 ? '#ff3b30' : i === 4 ? '#0a84ff' : '#0f0';
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
   function diagnostic(lignes) {
     ctx.save();
     ctx.font = '12px ui-monospace, Menlo, monospace';
@@ -178,6 +192,6 @@ export function creerRendu(canvasVideo, canvas) {
   return {
     get largeur() { return largeur; },
     get hauteur() { return hauteur; },
-    video, effacer, viseur, cartouches, message, flash, course, zone, diagnostic,
+    video, effacer, viseur, cartouches, message, flash, course, zone, points, diagnostic,
   };
 }

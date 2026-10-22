@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import './aide-three.js';
 import * as THREE from '../vendor/three.module.min.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { ESPECES } from '../js/especes.js';
@@ -23,14 +24,15 @@ for (const espece of Object.values(ESPECES)) {
     if (espece.vol) assert.ok(Math.abs(bb.min.y + bb.max.y) < 0.01, 'centré verticalement');
     else assert.ok(Math.abs(bb.min.y) < 0.01, 'pieds à y = 0');
     assert.ok(Math.abs(bb.min.x + bb.max.x) < 0.01, 'centré horizontalement');
-    assert.ok(m.ratio > 0.5 && m.ratio < 2, `proportions ${m.ratio}`);
+    assert.ok(m.ratioFace > 0.2 && m.ratioFace < 2, `largeur de face ${m.ratioFace}`);
+    assert.ok(m.ratioProfil > 0.3 && m.ratioProfil < 3, `largeur de profil ${m.ratioProfil}`);
     assert.ok(m.attente && m.fuite, 'attente et fuite');
     assert.equal(m.humeurs.length, espece.clips.humeurs.length);
   });
 }
 
 test('licorne : corne dorée sur la tête, pointée vers le haut', async () => {
-  const m = await charger(ESPECES[17]);
+  const m = await charger(ESPECES.cheval);
   m.pivot.updateMatrixWorld(true);
   const corne = m.pivot.getObjectByName('Corne');
   assert.ok(corne, 'corne ajoutée');
@@ -44,9 +46,13 @@ test('licorne : corne dorée sur la tête, pointée vers le haut', async () => {
 for (const espece of Object.values(ESPECES).filter((e) => e.ton === 'mechant')) {
   test(`${espece.nom} : yeux rougeoyants`, async () => {
     const m = await charger(espece);
+    const { materiau, objet } = espece.yeux ?? { materiau: 'Eye_White' };
     const yeux = [];
     m.pivot.traverse((o) => {
-      if (o.isMesh) yeux.push(...[].concat(o.material).filter((x) => x.name === (espece.yeux ?? 'Eye_White')));
+      if (!o.isMesh) return;
+      if (objet) {
+        if (o.name.includes(objet)) yeux.push(...[].concat(o.material));
+      } else yeux.push(...[].concat(o.material).filter((x) => x.name === materiau));
     });
     assert.ok(yeux.length > 0, 'matériau des yeux trouvé');
     assert.ok(yeux.every((x) => x.emissiveIntensity === 2 && x.emissive.r > 0.5));
@@ -54,7 +60,7 @@ for (const espece of Object.values(ESPECES).filter((e) => e.ton === 'mechant')) 
 }
 
 test('loup : robe sombre', async () => {
-  const m = await charger(ESPECES[16]);
+  const m = await charger(ESPECES.chien);
   const robes = [];
   m.pivot.traverse((o) => {
     if (o.isMesh) robes.push(...[].concat(o.material).filter((x) => x.name === 'Main'));
@@ -62,9 +68,9 @@ test('loup : robe sombre', async () => {
   assert.ok(robes.length > 0 && robes.every((x) => x.color.getHexString() === new THREE.Color('#2e3136').getHexString()));
 });
 
-for (const classe of [19, 18]) {
-  test(`explosion du ${ESPECES[classe].nom} : éclats issus de la créature, effet borné dans le temps`, async () => {
-    const m = await charger(ESPECES[classe]);
+for (const cle of ['vache', 'mouton', 'chevalier']) {
+  test(`explosion du ${ESPECES[cle].nom} : éclats issus de la créature, effet borné dans le temps`, async () => {
+    const m = await charger(ESPECES[cle]);
     m.attente.play();
     m.mixer.update(0.2);
     m.pivot.position.set(200, -400, 0);
@@ -90,3 +96,16 @@ for (const classe of [19, 18]) {
     e.liberer();
   });
 }
+
+test('squelette : seul l\'objet des yeux rougeoie, le corps garde sa texture', async () => {
+  const m = await charger(ESPECES['squelette-mage']);
+  const corps = m.pivot.getObjectByName('Skeleton_Mage_Body');
+  assert.ok(corps && corps.material.emissiveIntensity !== 2);
+});
+
+test('chevalier : une seule épée et un seul bouclier', async () => {
+  const m = await charger(ESPECES.chevalier);
+  const objets = [];
+  m.pivot.traverse((o) => { if (o.isMesh) objets.push(o.name); });
+  assert.deepEqual(objets.filter((n) => /Sword|Shield/.test(n)).sort(), ['1H_Sword', 'Round_Shield']);
+});

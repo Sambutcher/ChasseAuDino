@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { nouvelEtat, debloquerTir, finSerie, serieTerminee, voirCreature, quitterCreature, tirer, CARTOUCHES } from '../js/game.js';
 import { creerSuivi } from '../js/tracker.js';
 
-const VACHE = 19;
-const CHIEN = 16;
+const VACHE = 'vache';
+const CHIEN = 'chien';
 const enPosition = () => debloquerTir(nouvelEtat());
 
 test('la partie commence par la course, sans balle', () => {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, dansRect, lisserVers } from '../js/geometry.js';
+import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, dansRect, lisserVers, rogner } from '../js/geometry.js';
 
 test('cadrage couvre l\'écran puis zoome au centre', () => {
   // Vidéo portrait 720×1280 sur écran 375×667 : même ratio ≈, zoom 2 → moitié centrale.
@@ -69,6 +69,15 @@ test('dansRect', () => {
   assert.ok(dansRect({ x: 20, y: 50 }, r));
   assert.ok(!dansRect({ x: 33.5, y: 50 }, r));
   assert.ok(!dansRect({ x: 20, y: 16 }, r));
+});
+
+test('rogner : partie visible d\'une source qui déborde de la vidéo', () => {
+  // Source 100×100 dont le quart haut-gauche sort de la vidéo, vers une destination 200×200.
+  assert.deepEqual(rogner({ sx: -50, sy: -50, sw: 100, sh: 100 }, 640, 480, 200, 200),
+    { sx: 0, sy: 0, sw: 50, sh: 50, dx: 100, dy: 100, dw: 100, dh: 100 });
+  assert.deepEqual(rogner({ sx: 10, sy: 10, sw: 20, sh: 20 }, 640, 480, 40, 40),
+    { sx: 10, sy: 10, sw: 20, sh: 20, dx: 0, dy: 0, dw: 40, dh: 40 });
+  assert.equal(rogner({ sx: 700, sy: 0, sw: 50, sh: 50 }, 640, 480, 10, 10), null);
 });
 
 test('lisserVers : indépendant de la cadence, 63 % de l\'écart au bout de tau', () => {

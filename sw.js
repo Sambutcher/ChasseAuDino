@@ -29,6 +29,8 @@ const FICHIERS = [
   'js/especes.js',
   'js/creatures.js',
   'js/sons.js',
+  'js/couleur.js',
+  'js/posture.js',
   'models/yolo11n/model.json',
   'models/yolo11n/group1-shard1of3.bin',
   'models/yolo11n/group1-shard2of3.bin',
@@ -38,6 +40,14 @@ const FICHIERS = [
   'models/creatures/loup.glb',
   'models/creatures/dragon.glb',
   'models/creatures/lapin.glb',
+  'models/creatures/chevalier.glb',
+  'models/creatures/barbare.glb',
+  'models/creatures/mage.glb',
+  'models/creatures/voleur.glb',
+  'models/creatures/voleur-capuche.glb',
+  'models/creatures/squelette-mage.glb',
+  'models/creatures/squelette-guerrier.glb',
+  'models/creatures/squelette-voleur.glb',
 ];
 
 self.addEventListener('install', (ev) => {

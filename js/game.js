@@ -23,11 +23,11 @@ export function serieTerminee(etat) {
   return etat.phase === 'tir' && etat.cartouches === 0;
 }
 
-// Animal de classe `classe` en vue : la créature correspondante apparaît et garde son espèce
-// jusqu'à ce que l'animal soit perdu.
-export function voirCreature(etat, classe) {
+// Cible d'espèce `cle` (clé de ESPECES) en vue : la créature correspondante apparaît et garde
+// son espèce jusqu'à ce que la cible soit perdue.
+export function voirCreature(etat, cle) {
   if (etat.cibleVisible) return etat;
-  return { ...etat, cibleVisible: true, espece: etat.issue ? etat.espece : classe };
+  return { ...etat, cibleVisible: true, espece: etat.issue ? etat.espece : cle };
 }
 
 // Animal perdu avant le tir : l'espèce se déverrouille. Après le tir, elle reste pour l'animation.

@@ -1,7 +1,8 @@
 // Boucle du jeu : une partie alterne course (GPS, caméra éteinte) et tir (caméra, détection des
-// animaux, créature 3D suivie par flux optique). La logique pure vit dans game.js, especes.js,
-// course.js, tracker.js, flow.js et geometry.js ; ce fichier relie le navigateur (caméra, GPS,
-// canvas, three.js, sons) à cette logique.
+// animaux et des voitures, créature 3D suivie par flux optique et orientée comme la cible).
+// La logique pure vit dans game.js, especes.js, couleur.js, course.js, tracker.js, flow.js,
+// geometry.js et posture.js ; ce fichier relie le navigateur (caméra, GPS, canvas, three.js,
+// sons) à cette logique.
 import { demarrerCamera, arreterCamera } from './camera.js';
 import { suivrePosition, garderEcranAllume } from './position.js';
 import { creerCourse } from './course.js';
@@ -9,13 +10,19 @@ import { chargerDetecteur, detecter } from './detector.js';
 import { creerRendu } from './render.js';
 import { creerCreatures } from './creatures.js';
 import { creerSons } from './sons.js';
-import { ESPECES, filtrerEspece, messageIssue } from './especes.js';
+import { ESPECES, especeDe, estVoiture, filtrerEspece, messageIssue, profilRectangle, lacet } from './especes.js';
+import { couleurVoiture, majorite, zoneCarrosserie } from './couleur.js';
+import { chargerPosture, estimer, decoupeCarree, orientation, combiner } from './posture.js';
 import { creerSuivi } from './tracker.js';
 import { versGris, estimerDecalage } from './flow.js';
 import { nouvelEtat, debloquerTir, finSerie, serieTerminee, voirCreature, quitterCreature, tirer } from './game.js';
-import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource } from './geometry.js';
+import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, rogner } from './geometry.js';
 
 const URL_MODELE = 'models/yolo11n/model.json';
+const URL_POSTURE = 'models/rtmpose-ap10k/model.json';
+const INTERVALLE_POSTURE_MS = 330; // l'orientation change lentement : ~3 estimations par seconde
+const HISTORIQUE_POSTURE = 3; // estimations combinées pour l'orientation affichée
+const VOTES_COULEUR = 5; // images analysées avant de choisir le personnage d'une voiture
 const ZOOM = 1.5; // zoom numérique de l'image affichée
 const INTERVALLE_DETECTION_MS = 80;
 const LARGEUR_FLUX = 120; // largeur de l'image réduite pour le flux optique
@@ -60,10 +67,16 @@ boutonDemarrer.addEventListener('click', async () => {
     garderEcranAllume();
     statut.textContent = 'Chargement du détecteur…';
     const entree = await chargerDetecteur(URL_MODELE);
+    statut.textContent = 'Lecture des postures…';
+    // Sans modèle de posture, les créatures s'orientent d'après la forme du rectangle.
+    const posture = await chargerPosture(URL_POSTURE).catch((e) => {
+      console.warn('Posture indisponible :', e);
+      return null;
+    });
     statut.textContent = 'Réveil des créatures…';
     const creatures = await creerCreatures(canvasCreatures, { quandHumeur: (e) => sons.humeur(e.ton) });
     accueil.hidden = true;
-    lancerPartie(entree, creatures);
+    lancerPartie(entree, creatures, posture);
   } catch (e) {
     console.error(e);
     statut.textContent = `Impossible de démarrer : ${e.message || e}`;
@@ -71,7 +84,7 @@ boutonDemarrer.addEventListener('click', async () => {
   }
 });
 
-function lancerPartie(entree, creatures) {
+function lancerPartie(entree, creatures, posture) {
   const rendu = creerRendu(canvasVideo, canvas);
   let etat = nouvelEtat();
 
@@ -110,7 +123,31 @@ function lancerPartie(entree, creatures) {
   const ctxFlux = canvasFlux.getContext('2d', { willReadFrequently: true });
   let grisPrec = null;
 
-  const stats = { images: 0, detections: 0, inferenceMs: 0, fluxMs: 0, flux: { fiable: false }, debut: 0, texte: [] };
+  // Posture de l'animal (orientation de la créature) et couleur de la voiture (son personnage).
+  const canvasPosture = document.createElement('canvas'); // découpe de l'animal, entrée du modèle
+  canvasPosture.width = canvasPosture.height = posture ? posture.taille : 1;
+  const ctxPosture = canvasPosture.getContext('2d');
+  let postureEnCours = false;
+  let dernierePosture = 0;
+  let historiquePosture = []; // dernières orientations fiables { sens, profil }
+  let dernierSens = 0; // côté du regard, gardé quand la posture ne le dit pas
+  let pointsEcran = null; // points clés de la dernière posture (debug)
+  const canvasCouleur = document.createElement('canvas'); // carrosserie réduite
+  canvasCouleur.width = 32;
+  canvasCouleur.height = 12;
+  const ctxCouleur = canvasCouleur.getContext('2d', { willReadFrequently: true });
+  let votesCouleur = [];
+
+  function oublierCible() {
+    historiquePosture = [];
+    dernierSens = 0;
+    pointsEcran = null;
+    votesCouleur = [];
+  }
+
+  const stats = {
+    images: 0, detections: 0, inferenceMs: 0, postureMs: 0, fluxMs: 0, flux: { fiable: false }, debut: 0, texte: [],
+  };
 
   // « Position de tir » : rallume la caméra (geste utilisateur, exigé par iOS) et charge la carabine.
   boutonTir.addEventListener('click', async () => {
@@ -131,6 +168,7 @@ function lancerPartie(entree, creatures) {
     grisPrec = null;
     cible = null;
     zoneAnalysee = null;
+    oublierCible();
     etat = debloquerTir(etat);
     pasDeTir.hidden = true;
   });
@@ -151,7 +189,7 @@ function lancerPartie(entree, creatures) {
   canvas.addEventListener('pointerdown', (ev) => {
     ev.preventDefault();
     sons.debloquer(); // iOS peut suspendre l'audio à l'allumage de la caméra
-    if (!cible) return;
+    if (!cible || !etat.cibleVisible) return;
     const viseur = { x: rendu.largeur / 2, y: rendu.hauteur / 2 };
     const r = tirer(etat, creatures.touche(viseur));
     if (!r.resultat) return;
@@ -229,10 +267,61 @@ function lancerPartie(entree, creatures) {
         const centre = reference
           ? { x: reference.x + reference.w / 2, y: reference.y + reference.h / 2 }
           : { x: rendu.largeur / 2, y: rendu.hauteur / 2 };
-        suivi.maj(plusProcheDe(filtrerEspece(ecran, etat.espece), centre), fin);
+        const classe = etat.espece === null ? null : ESPECES[etat.espece].classe;
+        suivi.maj(plusProcheDe(filtrerEspece(ecran, classe), centre), fin);
       })
       .catch((e) => console.error(e))
       .finally(() => { detectionEnCours = false; });
+  }
+
+  // Dessine une zone de l'écran (vue de la caméra) sur toute la surface d'un canvas, gris hors image.
+  function dessinerZone(ctx, zone, c) {
+    const { width: w, height: h } = ctx.canvas;
+    ctx.fillStyle = 'rgb(114,114,114)';
+    ctx.fillRect(0, 0, w, h);
+    const r = rogner(zoneVersSource(zone, c, rendu.largeur, rendu.hauteur), video.videoWidth, video.videoHeight, w, h);
+    if (r) ctx.drawImage(video, r.sx, r.sy, r.sw, r.sh, r.dx, r.dy, r.dw, r.dh);
+  }
+
+  // Posture de l'animal suivi, sur sa découpe carrée ; une inférence à la fois (comme la détection).
+  function lancerPosture(c, t, boite) {
+    postureEnCours = true;
+    dernierePosture = t;
+    const suiviLancement = suivi;
+    const decoupe = decoupeCarree(boite);
+    dessinerZone(ctxPosture, decoupe, c);
+    const debut = performance.now();
+    estimer(canvasPosture)
+      .then((points) => {
+        if (suivi !== suiviLancement) return;
+        stats.postureMs = performance.now() - debut;
+        const k = canvasPosture.width / decoupe.w; // écran → découpe
+        const o = orientation(points, boite.w * k);
+        if (o.fiable) historiquePosture = [...historiquePosture.slice(1 - HISTORIQUE_POSTURE), o];
+        pointsEcran = points.map((p) => ({ x: decoupe.x + p.x / k, y: decoupe.y + p.y / k, score: p.score }));
+      })
+      .catch((e) => console.error(e))
+      .finally(() => { postureEnCours = false; });
+  }
+
+  // Espèce d'une cible qui apparaît : directe pour un animal ; pour une voiture, d'après la
+  // couleur de sa carrosserie votée sur plusieurs images (null tant que le vote n'est pas fini).
+  function especeCible(c, boite) {
+    if (!estVoiture(boite.classe)) return especeDe(boite.classe);
+    dessinerZone(ctxCouleur, zoneCarrosserie(boite), c);
+    votesCouleur.push(couleurVoiture(ctxCouleur.getImageData(0, 0, canvasCouleur.width, canvasCouleur.height).data));
+    return votesCouleur.length < VOTES_COULEUR ? null : especeDe(boite.classe, majorite(votesCouleur));
+  }
+
+  // Orientation de la créature : posture de l'animal si elle est connue, sinon forme du rectangle ;
+  // côté du regard : celui de la posture, ou le dernier connu, ou vers le centre de l'écran.
+  function lacetDe(boite) {
+    const espece = ESPECES[etat.espece];
+    const o = estVoiture(espece.classe) ? null : combiner(historiquePosture);
+    if (o?.sens) dernierSens = o.sens;
+    const profil = o ? o.profil : profilRectangle(espece, boite);
+    const versCentre = (rendu.largeur / 2 - (boite.x + boite.w / 2)) / (rendu.largeur / 2);
+    return lacet(profil, dernierSens, versCentre);
   }
 
   function imageCourse() {
@@ -252,24 +341,39 @@ function lancerPartie(entree, creatures) {
     if (!video.videoWidth) return; // caméra pas encore prête
     const c = cadrage(video.videoWidth, video.videoHeight, rendu.largeur, rendu.hauteur, ZOOM);
     suivreImage(c);
-    if (!detectionEnCours && t - derniereDetection >= INTERVALLE_DETECTION_MS) lancerDetection(c, t);
 
     const lu = suivi.lire(t);
-    if (lu.actif) etat = voirCreature(etat, lu.cible.classe);
-    else if (etat.cibleVisible) etat = quitterCreature(etat);
     cible = lu.actif ? lu.cible : null;
+    if (cible && !etat.cibleVisible) {
+      const cle = etat.issue ? etat.espece : especeCible(c, cible);
+      if (cle) etat = voirCreature(etat, cle);
+    } else if (!cible && etat.cibleVisible) {
+      etat = quitterCreature(etat);
+      if (!etat.issue) oublierCible();
+    }
+    if (!cible) votesCouleur = [];
+    const visible = cible && etat.cibleVisible;
+
+    // Une inférence à la fois : la posture de l'animal en vue (~3/s), sinon la détection.
+    if (!detectionEnCours && !postureEnCours) {
+      if (posture && visible && !etat.issue && !estVoiture(cible.classe) && t - dernierePosture >= INTERVALLE_POSTURE_MS) {
+        lancerPosture(c, t, cible);
+      } else if (t - derniereDetection >= INTERVALLE_DETECTION_MS) {
+        lancerDetection(c, t);
+      }
+    }
 
     rendu.effacer();
     rendu.video(video, c);
     if (!etat.issue) {
-      if (cible) creatures.montrer(etat.espece, cible, t);
+      if (visible) creatures.montrer(etat.espece, cible, t, lacetDe(cible));
       else creatures.cacher();
     }
     creatures.dessiner(t);
-    if (cible && !etat.issue) rendu.viseur();
-    if (cible || serieTerminee(etat)) rendu.cartouches(etat.cartouches);
+    if (visible && !etat.issue) rendu.viseur();
+    if (visible || serieTerminee(etat)) rendu.cartouches(etat.cartouches);
     if (etat.issue) rendu.message(messageIssue(ESPECES[etat.espece], etat.issue));
-    else if (!cible) rendu.message('Cherchez un animal…');
+    else if (!visible) rendu.message('Cherchez un animal ou une voiture…');
 
     const age = t - dernierTir.t;
     if (age < DUREE_FLASH_MS) rendu.flash(dernierTir.resultat, 1 - age / DUREE_FLASH_MS);
@@ -284,6 +388,7 @@ function lancerPartie(entree, creatures) {
         `${(stats.images / s).toFixed(0)} img/s`,
         `${(stats.detections / s).toFixed(1)} détections/s`,
         `inférence ${stats.inferenceMs.toFixed(0)} ms`,
+        `posture ${posture ? `${stats.postureMs.toFixed(0)} ms` : 'absente'}`,
         `flux ${stats.fluxMs.toFixed(1)} ms`,
       ];
       stats.images = 0;
@@ -292,11 +397,15 @@ function lancerPartie(entree, creatures) {
     }
     const f = stats.flux;
     if (zoneAnalysee) rendu.zone(zoneAnalysee);
+    if (pointsEcran && etat.cibleVisible) rendu.points(pointsEcran);
+    const o = combiner(historiquePosture);
     rendu.diagnostic([
       ...stats.texte,
       `décalage ${f.fiable ? `${f.dx},${f.dy}` : '—'}`,
       `zone ${zoneAnalysee ? zoneAnalysee.type : '—'}`,
       `espèce ${etat.espece === null ? '—' : ESPECES[etat.espece].nom}`,
+      `regard ${['←', '·', '→'][dernierSens + 1]} profil ${o ? o.profil.toFixed(2) : '—'}`,
+      `couleur ${votesCouleur.length ? majorite(votesCouleur) : '—'}`,
     ]);
   }
 

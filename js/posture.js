@@ -99,3 +99,13 @@ export function orientation(points, largeur, seuil = SEUIL_POINT) {
   const sens = Math.abs(dx) > 0.1 * largeur ? Math.sign(dx) : 0;
   return { sens, profil, fiable: true };
 }
+
+// Orientation retenue d'après les dernières estimations fiables (la plus récente en dernier) :
+// profil moyen ; sens majoritaire parmi celles qui en donnent un, le plus récent à égalité.
+export function combiner(historique) {
+  if (!historique.length) return null;
+  const profil = historique.reduce((s, o) => s + o.profil, 0) / historique.length;
+  const somme = historique.reduce((s, o) => s + o.sens, 0);
+  const recent = [...historique].reverse().find((o) => o.sens)?.sens ?? 0;
+  return { sens: Math.sign(somme) || recent, profil };
+}
