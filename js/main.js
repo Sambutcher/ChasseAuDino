@@ -33,6 +33,7 @@ const DUREE_FLASH_MS = 250;
 const PARAMS = new URLSearchParams(location.search);
 const DEBUG = PARAMS.has('debug'); // diagnostic à l'écran
 const SIMGPS = PARAMS.has('simgps'); // course simulée, pour tester sans courir
+const SANS_POSTURE = PARAMS.has('sansposture'); // sans modèle de posture (orientation par la forme)
 
 const accueil = document.getElementById('accueil');
 const boutonDemarrer = document.getElementById('demarrer');
@@ -67,16 +68,10 @@ boutonDemarrer.addEventListener('click', async () => {
     garderEcranAllume();
     statut.textContent = 'Chargement du détecteur…';
     const entree = await chargerDetecteur(URL_MODELE);
-    statut.textContent = 'Lecture des postures…';
-    // Sans modèle de posture, les créatures s'orientent d'après la forme du rectangle.
-    const posture = await chargerPosture(URL_POSTURE).catch((e) => {
-      console.warn('Posture indisponible :', e);
-      return null;
-    });
     statut.textContent = 'Réveil des créatures…';
     const creatures = await creerCreatures(canvasCreatures, { quandHumeur: (e) => sons.humeur(e.ton) });
     accueil.hidden = true;
-    lancerPartie(entree, creatures, posture);
+    lancerPartie(entree, creatures);
   } catch (e) {
     console.error(e);
     statut.textContent = `Impossible de démarrer : ${e.message || e}`;
@@ -84,7 +79,7 @@ boutonDemarrer.addEventListener('click', async () => {
   }
 });
 
-function lancerPartie(entree, creatures, posture) {
+function lancerPartie(entree, creatures) {
   const rendu = creerRendu(canvasVideo, canvas);
   let etat = nouvelEtat();
 
@@ -125,7 +120,22 @@ function lancerPartie(entree, creatures, posture) {
 
   // Posture de l'animal (orientation de la créature) et couleur de la voiture (son personnage).
   const canvasPosture = document.createElement('canvas'); // découpe de l'animal, entrée du modèle
-  canvasPosture.width = canvasPosture.height = posture ? posture.taille : 1;
+  // Modèle de posture (27 Mo) chargé en arrière-plan pendant la première course : la partie
+  // démarre sans lui ; sans lui, les créatures s'orientent d'après la forme du rectangle.
+  let posture = null;
+  let etatPosture = SANS_POSTURE ? 'désactivée' : 'chargement…';
+  if (!SANS_POSTURE) {
+    chargerPosture(URL_POSTURE)
+      .then((p) => {
+        canvasPosture.width = canvasPosture.height = p.taille;
+        posture = p;
+        etatPosture = 'prête';
+      })
+      .catch((e) => {
+        console.warn('Posture indisponible :', e);
+        etatPosture = 'absente';
+      });
+  }
   const ctxPosture = canvasPosture.getContext('2d');
   let postureEnCours = false;
   let dernierePosture = 0;
@@ -343,6 +353,7 @@ function lancerPartie(entree, creatures, posture) {
         `phase ${e.phase}`,
         `GPS ±${e.precision === null ? '—' : Math.round(e.precision)} m`,
         SIMGPS ? 'simulation' : 'GPS réel',
+        `posture ${etatPosture}`,
       ]);
     }
   }
@@ -398,7 +409,7 @@ function lancerPartie(entree, creatures, posture) {
         `${(stats.images / s).toFixed(0)} img/s`,
         `${(stats.detections / s).toFixed(1)} détections/s`,
         `inférence ${stats.inferenceMs.toFixed(0)} ms`,
-        `posture ${posture ? `${stats.postureMs.toFixed(0)} ms` : 'absente'}`,
+        `posture ${posture ? `${stats.postureMs.toFixed(0)} ms` : etatPosture}`,
         `flux ${stats.fluxMs.toFixed(1)} ms`,
       ];
       stats.images = 0;
