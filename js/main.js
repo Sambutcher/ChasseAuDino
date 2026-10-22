@@ -1,23 +1,27 @@
 // Boucle du jeu : une partie alterne course (GPS, caméra éteinte) et tir (caméra, détection des
-// feux, cible suivie par flux optique). La logique pure vit dans game.js, course.js, tracker.js,
-// flow.js et geometry.js ; ce fichier relie le navigateur (caméra, GPS, canvas) à cette logique.
+// animaux, créature 3D suivie par flux optique). La logique pure vit dans game.js, especes.js,
+// course.js, tracker.js, flow.js et geometry.js ; ce fichier relie le navigateur (caméra, GPS,
+// canvas, three.js, sons) à cette logique.
 import { demarrerCamera, arreterCamera } from './camera.js';
 import { suivrePosition, garderEcranAllume } from './position.js';
 import { creerCourse } from './course.js';
 import { chargerDetecteur, detecter } from './detector.js';
 import { creerRendu } from './render.js';
+import { creerCreatures } from './creatures.js';
+import { creerSons } from './sons.js';
+import { ESPECES, filtrerEspece, messageIssue } from './especes.js';
 import { creerSuivi } from './tracker.js';
 import { versGris, estimerDecalage } from './flow.js';
-import { nouvelEtat, debloquerTir, finSerie, serieTerminee, voirFeu, quitterFeu, tirer, serieEntamee } from './game.js';
-import { cadrage, letterbox, versEcran, plusProcheDe, ronds, zoneDetection, zoneVersSource } from './geometry.js';
+import { nouvelEtat, debloquerTir, finSerie, serieTerminee, voirCreature, quitterCreature, tirer } from './game.js';
+import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource } from './geometry.js';
 
 const URL_MODELE = 'models/yolo11n/model.json';
-const ZOOM = 2; // zoom numérique de l'image affichée
+const ZOOM = 1.5; // zoom numérique de l'image affichée
 const INTERVALLE_DETECTION_MS = 80;
 const LARGEUR_FLUX = 120; // largeur de l'image réduite pour le flux optique
 const RAYON_FLUX = 12; // déplacement max mesuré par trame, en pixels de l'image réduite
 const DISTANCE_COURSE = 100; // mètres à vol d'oiseau pour débloquer le tir
-const DELAI_FIN_SERIE_MS = 1500; // la cible reste visible après la 3e balle
+const DELAI_FIN_SERIE_MS = 2200; // temps de l'explosion ou de la fuite après le tir
 const DUREE_FLASH_MS = 250;
 const PARAMS = new URLSearchParams(location.search);
 const DEBUG = PARAMS.has('debug'); // diagnostic à l'écran
@@ -27,7 +31,9 @@ const accueil = document.getElementById('accueil');
 const boutonDemarrer = document.getElementById('demarrer');
 const statut = document.getElementById('statut');
 const video = document.getElementById('video');
-const canvas = document.getElementById('jeu');
+const canvasVideo = document.getElementById('jeu');
+const canvasCreatures = document.getElementById('creatures');
+const canvas = document.getElementById('hud');
 const pasDeTir = document.getElementById('pas-de-tir');
 const boutonTir = document.getElementById('position-tir');
 const erreurCamera = document.getElementById('erreur-camera');
@@ -36,14 +42,19 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker :', e));
 }
 
+const sons = creerSons();
+
 boutonDemarrer.addEventListener('click', async () => {
   boutonDemarrer.disabled = true;
+  sons.debloquer(); // dans le geste utilisateur, exigé par iOS
   try {
     garderEcranAllume();
     statut.textContent = 'Chargement du détecteur…';
     const entree = await chargerDetecteur(URL_MODELE);
+    statut.textContent = 'Réveil des créatures…';
+    const creatures = await creerCreatures(canvasCreatures, { quandHumeur: (e) => sons.humeur(e.ton) });
     accueil.hidden = true;
-    lancerPartie(entree);
+    lancerPartie(entree, creatures);
   } catch (e) {
     console.error(e);
     statut.textContent = `Impossible de démarrer : ${e.message || e}`;
@@ -51,8 +62,8 @@ boutonDemarrer.addEventListener('click', async () => {
   }
 });
 
-function lancerPartie(entree) {
-  const rendu = creerRendu(canvas);
+function lancerPartie(entree, creatures) {
+  const rendu = creerRendu(canvasVideo, canvas);
   let etat = nouvelEtat();
 
   // --- Course : GPS actif toute la partie ; le tir se débloque à DISTANCE_COURSE du départ. ---
@@ -68,9 +79,9 @@ function lancerPartie(entree) {
 
   // --- Tir : caméra, suivi de la cible, détection. ---
   let suivi = creerSuivi();
-  let cible = null; // boîte écran du feu quand il est visible
+  let cible = null; // boîte écran de l'animal quand il est visible
   let allumageCamera = false;
-  let finSerieA = null; // instant de la 3e balle
+  let finSerieA = null; // instant du tir
   let dernierTir = { resultat: null, t: -Infinity };
 
   const canvasEntree = document.createElement('canvas'); // entrée du modèle
@@ -114,6 +125,7 @@ function lancerPartie(entree) {
   // Série terminée : caméra coupée, nouvelle course depuis la position actuelle.
   function passerEnCourse() {
     arreterCamera(video);
+    creatures.cacher();
     etat = finSerie(etat);
     cible = null;
     finSerieA = null;
@@ -122,14 +134,26 @@ function lancerPartie(entree) {
     pasDeTir.hidden = false;
   }
 
-  // Tap = tir au centre de l'écran (croix de visée).
+  // Tap = l'unique tir, au centre de l'écran (croix de visée) : la créature explose ou s'enfuit.
   canvas.addEventListener('pointerdown', (ev) => {
     ev.preventDefault();
+    sons.debloquer(); // iOS peut suspendre l'audio à l'allumage de la caméra
     if (!cible) return;
-    const r = tirer(etat, cible, { x: rendu.largeur / 2, y: rendu.hauteur / 2 });
+    const viseur = { x: rendu.largeur / 2, y: rendu.hauteur / 2 };
+    const r = tirer(etat, creatures.touche(viseur));
+    if (!r.resultat) return;
     etat = r.etat;
-    if (r.resultat) dernierTir = { resultat: r.resultat, t: performance.now() };
-    if (serieTerminee(etat) && finSerieA === null) finSerieA = performance.now();
+    const { ton } = ESPECES[etat.espece];
+    sons.tir();
+    if (r.resultat === 'touche') {
+      creatures.exploser();
+      sons.explosion(ton);
+    } else {
+      creatures.fuir();
+      sons.fuite(ton);
+    }
+    dernierTir = { resultat: r.resultat, t: performance.now() };
+    finSerieA = performance.now();
   });
 
   // Flux optique : déplacement de l'image depuis la trame précédente, appliqué à la cible.
@@ -159,8 +183,8 @@ function lancerPartie(entree) {
     stats.fluxMs = performance.now() - t0;
   }
 
-  // Une seule inférence à la fois, sur une zone d'intérêt de l'écran (autour du feu suivi, ou
-  // alternativement vue entière / centre) : les feux lointains y gardent assez de pixels.
+  // Une seule inférence à la fois, sur une zone d'intérêt de l'écran (autour de l'animal suivi, ou
+  // alternativement vue entière / centre) : les animaux lointains y gardent assez de pixels.
   // La boîte détectée décrit l'image du lancement : on la décale du mouvement survenu depuis.
   function lancerDetection(c, t) {
     detectionEnCours = true;
@@ -184,13 +208,15 @@ function lancerPartie(entree) {
         const cumul = suivi.cumul;
         const ecran = boites.map((b) => {
           const e = versEcran(b, lb, zone.w, zone.h);
-          return { ...e, x: e.x + zone.x + cumul.x - cumulDepart.x, y: e.y + zone.y + cumul.y - cumulDepart.y };
+          return {
+            ...e, x: e.x + zone.x + cumul.x - cumulDepart.x, y: e.y + zone.y + cumul.y - cumulDepart.y, classe: b.classe,
+          };
         });
         const reference = suivi.lire(fin).cible;
         const centre = reference
           ? { x: reference.x + reference.w / 2, y: reference.y + reference.h / 2 }
           : { x: rendu.largeur / 2, y: rendu.hauteur / 2 };
-        suivi.maj(plusProcheDe(ecran, centre), fin);
+        suivi.maj(plusProcheDe(filtrerEspece(ecran, etat.espece), centre), fin);
       })
       .catch((e) => console.error(e))
       .finally(() => { detectionEnCours = false; });
@@ -216,18 +242,21 @@ function lancerPartie(entree) {
     if (!detectionEnCours && t - derniereDetection >= INTERVALLE_DETECTION_MS) lancerDetection(c, t);
 
     const lu = suivi.lire(t);
-    if (lu.actif) etat = voirFeu(etat);
-    else if (etat.cibleVisible) etat = quitterFeu(etat);
+    if (lu.actif) etat = voirCreature(etat, lu.cible.classe);
+    else if (etat.cibleVisible) etat = quitterCreature(etat);
     cible = lu.actif ? lu.cible : null;
 
+    rendu.effacer();
     rendu.video(video, c);
-    if (cible) {
-      rendu.cible(cible, ronds(cible), etat.touches, etat.impacts);
-      rendu.viseur();
+    if (!etat.issue) {
+      if (cible) creatures.montrer(etat.espece, cible, t);
+      else creatures.cacher();
     }
-    if (cible || serieEntamee(etat)) rendu.cartouches(etat.cartouches);
-    if (cible && serieTerminee(etat)) rendu.message('Plus de cartouches');
-    else if (!cible && !serieTerminee(etat)) rendu.message(serieEntamee(etat) ? 'Retrouvez le feu…' : 'Cherchez un feu…');
+    creatures.dessiner(t);
+    if (cible && !etat.issue) rendu.viseur();
+    if (cible || serieTerminee(etat)) rendu.cartouches(etat.cartouches);
+    if (etat.issue) rendu.message(messageIssue(ESPECES[etat.espece], etat.issue));
+    else if (!cible) rendu.message('Cherchez un animal…');
 
     const age = t - dernierTir.t;
     if (age < DUREE_FLASH_MS) rendu.flash(dernierTir.resultat, 1 - age / DUREE_FLASH_MS);
@@ -254,12 +283,16 @@ function lancerPartie(entree) {
       ...stats.texte,
       `décalage ${f.fiable ? `${f.dx},${f.dy}` : '—'}`,
       `zone ${zoneAnalysee ? zoneAnalysee.type : '—'}`,
+      `espèce ${etat.espece === null ? '—' : ESPECES[etat.espece].nom}`,
     ]);
   }
 
   function image(t) {
     if (finSerieA !== null && t - finSerieA > DELAI_FIN_SERIE_MS) passerEnCourse();
-    if (etat.phase === 'course') imageCourse();
+    if (etat.phase === 'course') {
+      rendu.effacer();
+      imageCourse();
+    }
     else imageTir(t);
     requestAnimationFrame(image);
   }

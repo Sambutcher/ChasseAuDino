@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Street Biathlon</title>
+  <title>Chasse au dino</title>
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Biathlon">
+  <meta name="apple-mobile-web-app-title" content="Chasse au dino">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -19,17 +19,20 @@
 <body>
   <video id="video" playsinline muted></video>
   <canvas id="jeu"></canvas>
+  <canvas id="creatures"></canvas>
+  <canvas id="hud"></canvas>
   <div id="pas-de-tir" hidden>
     <p id="erreur-camera"></p>
     <button id="position-tir" type="button" disabled>Position de tir</button>
   </div>
   <div id="accueil">
-    <h1>Street Biathlon</h1>
-    <p>Courez 100 m jusqu'au pas de tir, visez les feux tricolores, blanchissez les 3 cibles.
-      Après chaque série, 100 m de course pour recharger.</p>
+    <h1>Chasse au dino</h1>
+    <p>Courez 100 m jusqu'au pas de tir, puis cherchez un animal : vache, cheval, chien, mouton
+      ou chat. Il se change en créature. Une seule cartouche : touchée, elle explose ;
+      ratée, elle s'enfuit. Puis 100 m de course pour recharger.</p>
     <button id="demarrer" type="button">Démarrer</button>
     <p id="statut"></p>
-    <p id="version">v1.0.0</p>
+    <p id="version">v0.1.0</p>
   </div>
 </body>
 </html>

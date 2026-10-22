@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cadrage, letterbox, versEcran, plusProcheDe, ronds, rondVise, zoneDetection, zoneVersSource, plaque, dansRect } from '../js/geometry.js';
+import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, zoneVersSource, dansRect } from '../js/geometry.js';
 
 test('cadrage couvre l\'écran puis zoome au centre', () => {
   // Vidéo portrait 720×1280 sur écran 375×667 : même ratio ≈, zoom 2 → moitié centrale.
@@ -25,20 +25,6 @@ test('plusProcheDe choisit la boîte la plus centrée', () => {
   const b = { x: 45, y: 45, w: 10, h: 10 };
   assert.equal(plusProcheDe([a, b], { x: 50, y: 50 }), b);
   assert.equal(plusProcheDe([], { x: 0, y: 0 }), null);
-});
-
-test('ronds alignés sur les 3 lampes', () => {
-  const r = ronds({ x: 0, y: 0, w: 30, h: 90 });
-  assert.deepEqual(r.map((o) => o.y), [15, 45, 75]);
-  assert.ok(r.every((o) => o.x === 15 && o.r === 9.75));
-});
-
-test('rondVise : dans le rond, à côté, et le plus proche', () => {
-  const r = ronds({ x: 0, y: 0, w: 30, h: 90 });
-  assert.equal(rondVise(r, { x: 15, y: 45 }), 1);
-  assert.equal(rondVise(r, { x: 15, y: 30 }), -1);
-  assert.equal(rondVise(r, { x: 100, y: 100 }), -1);
-  assert.equal(rondVise(r, { x: 20, y: 72 }), 2);
 });
 
 test('zoneDetection : autour de la cible, au ratio du modèle, bornée à l\'écran', () => {
@@ -77,11 +63,10 @@ test('aller-retour zone écran → vidéo → entrée modèle → écran', () =>
   assert.ok(src.sx >= c.sx - 1e-9 && src.sx + src.sw <= c.sx + c.sw + 1e-9);
 });
 
-test('plaque et dansRect', () => {
-  const p = plaque({ x: 10, y: 20, w: 20, h: 60 });
-  assert.deepEqual(p, { x: 7, y: 17, w: 26, h: 66 });
-  assert.ok(dansRect({ x: 7, y: 17 }, p));
-  assert.ok(dansRect({ x: 20, y: 50 }, p));
-  assert.ok(!dansRect({ x: 33.5, y: 50 }, p));
-  assert.ok(!dansRect({ x: 20, y: 16 }, p));
+test('dansRect', () => {
+  const r = { x: 7, y: 17, w: 26, h: 66 };
+  assert.ok(dansRect({ x: 7, y: 17 }, r));
+  assert.ok(dansRect({ x: 20, y: 50 }, r));
+  assert.ok(!dansRect({ x: 33.5, y: 50 }, r));
+  assert.ok(!dansRect({ x: 20, y: 16 }, r));
 });

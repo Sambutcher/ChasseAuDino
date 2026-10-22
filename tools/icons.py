@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Génère les icônes de la PWA (nécessite Pillow, par ex. le Python du pipx ultralytics :
-~/.local/share/pipx/venvs/ultralytics/bin/python tools/icons.py)."""
+"""Génère les icônes de la PWA (nécessite Pillow) : python3 tools/icons.py"""
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -11,20 +10,35 @@ ECHELLE = 4  # dessin sur-échantillonné puis réduit pour lisser les bords
 
 def icone(taille):
     t = taille * ECHELLE
-    img = Image.new("RGB", (t, t), "#111111")
+    img = Image.new("RGB", (t, t), "#16261b")
     d = ImageDraw.Draw(img)
-    # Plaque verticale à angles droits comme la cible du jeu, 3 ronds dont le premier blanchi.
-    w, h = t * 0.34, t * 0.74
-    x0, y0 = (t - w) / 2, (t - h) / 2
-    d.rectangle([x0, y0, x0 + w, y0 + h], fill="#f4f4f0")
-    r = min(w / 2, h / 6) * 0.65
-    for i, f in enumerate((1 / 6, 1 / 2, 5 / 6)):
-        cx, cy = t / 2, y0 + h * f
-        boite = [cx - r, cy - r, cx + r, cy + r]
-        if i == 0:
-            d.ellipse(boite, fill="#ffffff", outline="#999999", width=ECHELLE * max(1, taille // 96))
-        else:
-            d.ellipse(boite, fill="#111111")
+    u = t / 100  # unité : 1 % de l'icône
+
+    def ellipse(x0, y0, x1, y1, couleur):
+        d.ellipse([x0 * u, y0 * u, x1 * u, y1 * u], fill=couleur)
+
+    def poly(points, couleur):
+        d.polygon([(x * u, y * u) for x, y in points], fill=couleur)
+
+    # Petit dino kawaii (corps rond, grosse tête), comme la créature du jeu.
+    violet, ventre, piques = "#8e5bd6", "#f4c56a", "#f08bb4"
+    poly([(30, 70), (14, 78), (12, 72), (32, 62)], violet)  # queue
+    for x in (36, 44, 52):  # piques du dos
+        poly([(x, 46), (x + 4, 38), (x + 8, 46)], piques)
+    ellipse(30, 42, 66, 80, violet)  # corps
+    ellipse(38, 56, 60, 78, ventre)  # ventre
+    ellipse(34, 74, 44, 84, violet)  # pattes
+    ellipse(52, 74, 62, 84, violet)
+    ellipse(48, 20, 82, 50, violet)  # tête
+    ellipse(66, 28, 74, 36, "#ffffff")  # œil
+    ellipse(69, 30, 73, 35, "#111111")
+    ellipse(72, 40, 78, 44, piques)  # joue
+
+    # Viseur doré par-dessus.
+    or_, e = "#d4a017", max(1, round(2.2 * u))
+    d.ellipse([22 * u, 22 * u, 78 * u, 78 * u], outline=or_, width=e)
+    for x0, y0, x1, y1 in ((50, 6, 50, 26), (50, 74, 50, 94), (6, 50, 26, 50), (74, 50, 94, 50)):
+        d.line([x0 * u, y0 * u, x1 * u, y1 * u], fill=or_, width=e)
     return img.resize((taille, taille), Image.LANCZOS)
 
 

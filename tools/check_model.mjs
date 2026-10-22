@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import tf from '@tensorflow/tfjs-node';
 import { decoder } from '../js/detector.js';
 import { letterbox } from '../js/geometry.js';
+import { ESPECES } from '../js/especes.js';
 
 const [dossier, cheminImage] = process.argv.slice(2);
 const modele = await tf.loadGraphModel(pathToFileURL(resolve(dossier, 'model.json')).href);
@@ -27,13 +28,11 @@ const [, , n] = sortie.shape;
 const donnees = await sortie.data();
 console.log(`entrée ${W}×${H}, sortie ${sortie.shape}`);
 
-const classes = { 0: 'person', 5: 'bus', 9: 'traffic light' };
 let total = 0;
-for (const [id, nom] of Object.entries(classes)) {
-  for (const b of decoder(donnees, n, Number(id), 0.4)) {
-    total++;
-    console.log(`${nom} ${b.score.toFixed(2)} x=${b.x.toFixed(0)} y=${b.y.toFixed(0)} w=${b.w.toFixed(0)} h=${b.h.toFixed(0)}`);
-  }
+for (const b of decoder(donnees, n)) {
+  total++;
+  const e = ESPECES[b.classe];
+  console.log(`${e.animal} → ${e.nom} ${b.score.toFixed(2)} x=${b.x.toFixed(0)} y=${b.y.toFixed(0)} w=${b.w.toFixed(0)} h=${b.h.toFixed(0)}`);
 }
 if (total === 0) {
   console.error('Aucune détection : export ou décodage incorrect.');

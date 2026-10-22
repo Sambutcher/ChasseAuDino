@@ -1,7 +1,7 @@
 {
-  "name": "Street Biathlon",
-  "short_name": "Biathlon",
-  "description": "Biathlon urbain : visez les feux tricolores avec la caméra.",
+  "name": "Chasse au dino",
+  "short_name": "Chasse au dino",
+  "description": "Course et tir : les animaux de la rue deviennent des créatures 3D à faire exploser.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

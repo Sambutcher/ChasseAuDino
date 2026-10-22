@@ -1,4 +1,4 @@
-// Géométrie pure : cadrage vidéo, cible à 3 ronds, test de touche.
+// Géométrie pure : cadrage vidéo, zones de détection, conversions de repères.
 
 // Portion de la source (sx, sy, sw, sh) à afficher pour couvrir la destination
 // (comme object-fit: cover), puis agrandie d'un facteur `zoom` autour du centre.
@@ -44,29 +44,8 @@ export function plusProcheDe(boites, point) {
   return meilleure;
 }
 
-// Les 3 ronds de la cible, alignés sur les 3 lampes du feu (haut, milieu, bas).
-export function ronds(cible) {
-  const r = Math.min(cible.w / 2, cible.h / 6) * 0.65;
-  const x = cible.x + cible.w / 2;
-  return [1 / 6, 1 / 2, 5 / 6].map((f) => ({ x, y: cible.y + cible.h * f, r }));
-}
-
-// Indice du rond touché par un tir au point donné, ou -1.
-export function rondVise(listeRonds, point) {
-  let indice = -1;
-  let dMin = Infinity;
-  listeRonds.forEach((rond, i) => {
-    const d = Math.hypot(rond.x - point.x, rond.y - point.y);
-    if (d <= rond.r && d < dMin) {
-      dMin = d;
-      indice = i;
-    }
-  });
-  return indice;
-}
-
 // Zone de l'écran à faire analyser par le modèle, au ratio de son entrée (largeur / hauteur) :
-// autour du feu suivi, sinon alternance vue entière / zone centrale (feux lointains visés).
+// autour de l'animal suivi, sinon alternance vue entière / zone centrale (animaux lointains visés).
 export function zoneDetection(cible, ecranW, ecranH, ratio, cycle) {
   const borner = (cx, cy, h) => {
     let w = h * ratio;
@@ -89,12 +68,6 @@ export function zoneVersSource(zone, c, ecranW, ecranH) {
   const kx = c.sw / ecranW;
   const ky = c.sh / ecranH;
   return { sx: c.sx + zone.x * kx, sy: c.sy + zone.y * ky, sw: zone.w * kx, sh: zone.h * ky };
-}
-
-// Plaque blanche de la cible : la boîte du feu agrandie d'une marge.
-export function plaque(boite) {
-  const marge = boite.w * 0.15;
-  return { x: boite.x - marge, y: boite.y - marge, w: boite.w + 2 * marge, h: boite.h + 2 * marge };
 }
 
 export function dansRect(point, r) {

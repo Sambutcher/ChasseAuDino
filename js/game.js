@@ -1,59 +1,48 @@
 // État du jeu, sans dépendance au navigateur : chaque fonction renvoie un nouvel état.
-// Une partie alterne course (caméra éteinte, 100 m pour débloquer le tir) et tir (3 balles).
-// Pendant le tir, la série (cartouches, ronds blanchis, éclats) survit à la perte du feu.
-import { ronds, rondVise, plaque, dansRect } from './geometry.js';
+// Une partie alterne course (caméra éteinte, 100 m pour débloquer le tir) et tir (1 cartouche).
+// Pendant le tir, l'espèce de la créature est verrouillée tant que l'animal reste en vue.
 
-export const CARTOUCHES = 3;
-
-const cibleVierge = () => ({ touches: [false, false, false], impacts: [] });
+export const CARTOUCHES = 1;
 
 // Une partie commence par la course jusqu'au pas de tir.
 export function nouvelEtat() {
-  return { phase: 'course', cartouches: 0, ...cibleVierge(), cibleVisible: false };
+  return { phase: 'course', cartouches: 0, espece: null, issue: null, cibleVisible: false };
 }
 
-// En position de tir : carabine chargée, cible vierge.
+// En position de tir : carabine chargée, aucune créature en vue.
 export function debloquerTir(etat) {
-  return { ...etat, phase: 'tir', cartouches: CARTOUCHES, ...cibleVierge(), cibleVisible: false };
+  return { ...etat, phase: 'tir', cartouches: CARTOUCHES, espece: null, issue: null, cibleVisible: false };
 }
 
 // Série terminée : retour à la course.
 export function finSerie(etat) {
-  return { ...etat, phase: 'course', cartouches: 0, cibleVisible: false };
+  return { ...etat, phase: 'course', cartouches: 0, espece: null, issue: null, cibleVisible: false };
 }
 
 export function serieTerminee(etat) {
   return etat.phase === 'tir' && etat.cartouches === 0;
 }
 
-export function serieEntamee(etat) {
-  return etat.phase === 'tir' && etat.cartouches < CARTOUCHES;
+// Animal de classe `classe` en vue : la créature correspondante apparaît et garde son espèce
+// jusqu'à ce que l'animal soit perdu.
+export function voirCreature(etat, classe) {
+  if (etat.cibleVisible) return etat;
+  return { ...etat, cibleVisible: true, espece: etat.issue ? etat.espece : classe };
 }
 
-export function voirFeu(etat) {
-  return etat.cibleVisible ? etat : { ...etat, cibleVisible: true };
+// Animal perdu avant le tir : l'espèce se déverrouille. Après le tir, elle reste pour l'animation.
+export function quitterCreature(etat) {
+  if (!etat.cibleVisible) return etat;
+  return { ...etat, cibleVisible: false, espece: etat.issue ? etat.espece : null };
 }
 
-export function quitterFeu(etat) {
-  return etat.cibleVisible ? { ...etat, cibleVisible: false } : etat;
-}
-
-// Tir au point `viseur` sur la cible dessinée autour de `boite`.
-// resultat : 'touche', 'rate', ou null si le tir est impossible (pas de feu, plus de balles).
-// Un raté sur la plaque laisse un éclat, mémorisé en coordonnées relatives à la plaque (0–1)
-// pour suivre la cible quand elle bouge ou change de taille.
-export function tirer(etat, boite, viseur) {
+// Tir unique. `touche` : le viseur est sur la silhouette de la créature (calculé par le rendu 3D).
+// resultat : 'touche', 'rate', ou null si le tir est impossible (pas de créature, plus de balle).
+// Touchée, la créature explose ; ratée, elle s'enfuit.
+export function tirer(etat, touche) {
   if (etat.phase !== 'tir' || !etat.cibleVisible || etat.cartouches === 0) return { etat, resultat: null };
-  const i = rondVise(ronds(boite), viseur);
-  const touche = i >= 0 && !etat.touches[i];
-  const touches = touche ? etat.touches.map((t, j) => t || j === i) : etat.touches;
-  let impacts = etat.impacts;
-  const p = plaque(boite);
-  if (!touche && dansRect(viseur, p)) {
-    impacts = [...impacts, { u: (viseur.x - p.x) / p.w, v: (viseur.y - p.y) / p.h }];
-  }
   return {
-    etat: { ...etat, cartouches: etat.cartouches - 1, touches, impacts },
+    etat: { ...etat, cartouches: etat.cartouches - 1, issue: touche ? 'explosee' : 'enfuie' },
     resultat: touche ? 'touche' : 'rate',
   };
 }

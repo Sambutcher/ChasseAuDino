@@ -1,5 +1,5 @@
 // Mesure du déplacement de l'image entre deux trames, par recherche de bloc (SAD).
-// Le feu est fixe dans le monde : quand le téléphone bouge, la zone autour de lui se
+// L'animal bouge peu dans le monde : quand le téléphone bouge, la zone autour de lui se
 // déplace d'un bloc, ce qui permet à la cible de suivre entre deux détections.
 
 const TEXTURE_MIN = 3; // écart moyen à la moyenne en dessous duquel le bloc est trop uni

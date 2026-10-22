@@ -22,13 +22,19 @@ test('fichiers référencés par index.html et le manifest dans le cache', () =>
   }
 });
 
-test('modules js/ et fichiers du modèle dans le cache', () => {
+test('modules, bibliothèques, créatures et fichiers du modèle dans le cache', () => {
   const dossier = (d) => readdirSync(new URL(`../${d}/`, import.meta.url)).map((f) => `${d}/${f}`);
-  for (const f of dossier('js')) assert.ok(fichiersCache.includes(f), `${f} manque dans FICHIERS de sw.js`);
+  const servis = [...dossier('js'), ...dossier('vendor').filter((f) => f.endsWith('.js')), ...dossier('models/creatures')];
+  for (const f of servis) assert.ok(fichiersCache.includes(f), `${f} manque dans FICHIERS de sw.js`);
   const modele = JSON.parse(lire('models/yolo11n/model.json'));
   for (const f of modele.weightsManifest.flatMap((g) => g.paths)) {
     assert.ok(fichiersCache.includes(`models/yolo11n/${f}`), `models/yolo11n/${f} manque dans FICHIERS de sw.js`);
   }
+});
+
+test('chaque créature du bestiaire a son modèle en cache', async () => {
+  const { ESPECES } = await import('../js/especes.js');
+  for (const e of Object.values(ESPECES)) assert.ok(fichiersCache.includes(e.fichier), `${e.fichier} manque dans FICHIERS de sw.js`);
 });
 
 test('le cache ne liste que des fichiers existants', () => {

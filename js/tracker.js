@@ -1,4 +1,4 @@
-// Suivi du feu : déplacé à chaque image par le flux optique, recalé à chaque détection,
+// Suivi de l'animal : déplacé à chaque image par le flux optique, recalé à chaque détection,
 // avec hystérésis d'apparition/disparition et refus des sauts non confirmés.
 
 export function creerSuivi({
@@ -93,7 +93,7 @@ export function creerSuivi({
       const k = Math.hypot(cd.x - cc.x, cd.y - cc.y) < cible.h * ecartLisse ? lissagePosition : 1;
       const x = cc.x + (cd.x - cc.x) * k;
       const y = cc.y + (cd.y - cc.y) * k;
-      cible = { x: x - w / 2, y: y - h / 2, w, h };
+      cible = { x: x - w / 2, y: y - h / 2, w, h, classe: cible.classe }; // espèce de la 1re vue
     },
 
     // État courant à l'instant t.

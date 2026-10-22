@@ -1,9 +1,9 @@
-// Détection des feux tricolores avec YOLO11n (export TensorFlow.js).
-// Interface : chargerDetecteur(url) puis detecter(canvas) → boîtes {x, y, w, h, score}
+// Détection des animaux avec YOLO11n (export TensorFlow.js).
+// Interface : chargerDetecteur(url) puis detecter(canvas) → boîtes {x, y, w, h, score, classe}
 // dans le repère de l'entrée du modèle. `tf` est le global chargé par vendor/tf.min.js.
+import { CLASSES } from './especes.js';
 
-const CLASSE_FEU = 9; // « traffic light » dans COCO
-const SEUIL_SCORE = 0.25;
+const SEUIL_SCORE = 0.35;
 const SEUIL_IOU = 0.45;
 
 let modele = null;
@@ -30,14 +30,20 @@ export async function detecter(canvas) {
 }
 
 // Sortie YOLO [1, 84, n] : cx, cy, w, h puis 80 scores de classe, pour n ancres.
-export function decoder(donnees, n, classe = CLASSE_FEU, seuil = SEUIL_SCORE) {
+// Chaque ancre garde la meilleure des classes recherchées.
+export function decoder(donnees, n, classes = CLASSES, seuil = SEUIL_SCORE) {
   const boites = [];
   for (let i = 0; i < n; i++) {
-    const score = donnees[(4 + classe) * n + i];
-    if (score < seuil) continue;
+    let score = seuil;
+    let classe = -1;
+    for (const c of classes) {
+      const s = donnees[(4 + c) * n + i];
+      if (s >= score) { score = s; classe = c; }
+    }
+    if (classe < 0) continue;
     const w = donnees[2 * n + i];
     const h = donnees[3 * n + i];
-    boites.push({ x: donnees[i] - w / 2, y: donnees[n + i] - h / 2, w, h, score });
+    boites.push({ x: donnees[i] - w / 2, y: donnees[n + i] - h / 2, w, h, score, classe });
   }
   return nms(boites);
 }
