@@ -25,19 +25,21 @@ case "$1" in
     ls -la rtmpose.onnx
     ;;
   tf)
-    # Données d'essai fournies (photo de chien, déjà normalisée, NHWC) : sinon onnx2tf en
-    # télécharge et ce fichier ne se charge plus. Moyenne 0 et écart 1 : rien à renormaliser.
+    # Pour une entrée image à lot fixe, onnx2tf télécharge toujours une image d'essai, et ce
+    # fichier ne se charge plus : on lui substitue la photo du chien (normalisée, NHWC).
+    # Lot fixé à 1, noms de sorties conservés (simcc_x, simcc_y) dans la signature.
     python3 - "$RACINE/tools/chien.jpg" <<'PY'
 import sys
 import numpy as np
 from PIL import Image
+import onnx2tf.onnx2tf as o2t
+
 img = np.asarray(Image.open(sys.argv[1]).convert("RGB").resize((256, 256)), dtype=np.float32)
-x = (img - [123.675, 116.28, 103.53]) / [58.395, 57.12, 57.375]
-np.save("essai.npy", x[None].astype(np.float32))
+essai = ((img - [123.675, 116.28, 103.53]) / [58.395, 57.12, 57.375])[None].astype(np.float32)
+o2t.download_test_image_data = lambda: essai
+o2t.convert(input_onnx_file_path="rtmpose.onnx", output_folder_path="saved_model",
+            batch_size=1, output_signaturedefs=True)
 PY
-    # Lot fixé à 1, noms de sorties conservés (simcc_x, simcc_y) dans la signature.
-    onnx2tf -i rtmpose.onnx -o saved_model -b 1 -osd \
-      -cind input essai.npy "[[[[0.0,0.0,0.0]]]]" "[[[[1.0,1.0,1.0]]]]"
     ls -la saved_model
     ;;
   reference)
