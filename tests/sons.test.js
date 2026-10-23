@@ -6,6 +6,7 @@ import { creerSons } from '../js/sons.js';
 // Faux Web Audio : compte les oscillateurs démarrés, accepte tous les branchements.
 function fauxAudio() {
   const compte = { oscillateurs: 0 };
+  globalThis.fetch = async () => ({ arrayBuffer: async () => new ArrayBuffer(8) });
   const parametre = () => ({
     value: 0,
     setValueAtTime() {},
@@ -25,17 +26,19 @@ function fauxAudio() {
     createOscillator() { compte.oscillateurs++; return noeud(); }
     createGain() { return noeud(); }
     createBiquadFilter() { return noeud(); }
-    createBufferSource() { return noeud(); }
+    createBufferSource() { compte.oscillateurs++; return noeud(); }
+    decodeAudioData(_, ok) { ok({ duration: 1 }); }
     resume() {}
   }
   globalThis.window = { AudioContext: Contexte };
   return compte;
 }
 
-test('cris : un par animal, aucun pour un aliment, délai entre deux cris', () => {
+test('cris : un par animal, aucun pour un aliment, délai entre deux cris', async () => {
   const compte = fauxAudio();
   const sons = creerSons();
   sons.debloquer();
+  await new Promise((r) => setTimeout(r, 10)); // chargement des enregistrements
   const animaux = Object.keys(ESPECES).filter((cle) => ESPECES[cle].clips);
   assert.equal(animaux.length, 5);
   let t = 0;
@@ -60,10 +63,11 @@ test('cris : rien tant que l\'audio n\'est pas débloqué', () => {
   assert.equal(compte.oscillateurs, 0);
 });
 
-test('fuite : l\'animal crie malgré le délai, l\'aliment fait son bruit de fuite', () => {
+test('fuite : l\'animal crie malgré le délai, l\'aliment fait son bruit de fuite', async () => {
   const compte = fauxAudio();
   const sons = creerSons();
   sons.debloquer();
+  await new Promise((r) => setTimeout(r, 10));
   sons.cri('chat', performance.now()); // apparition
   const apres = compte.oscillateurs;
   sons.fuite('kawaii', 'chat');

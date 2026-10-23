@@ -109,6 +109,12 @@ version à leur prochaine ouverture.
   distillé d'[Orient Anything](https://github.com/SpatialVision/Orient-Anything) (Wang et al. 2024, CC BY 4.0) sur des voitures de COCO 2017.
 - Animaux 3D : pack « Ultimate Animated Animals » de [Quaternius](https://quaternius.com/packs/ultimateanimatedanimals.html),
   CC0 (domaine public). Couleurs pastel et allègement des clips par `tools/preparer_animaux.py`.
+- Cris des animaux (`sons/`, extraits et convertis en WAV) : Wikimedia Commons.
+  Shiba : [Barking of a dog](https://commons.wikimedia.org/wiki/File:Barking_of_a_dog.ogg) (Amada44, CC BY-SA 3.0) ;
+  renard : [Vulpes vulpes, Henclová](https://commons.wikimedia.org/wiki/File:Vulpes_vulpes,_at_Henclov%C3%A1,_Slovakia_XC108315.mp3) (Alexander Kurthy, CC BY-SA 4.0, xeno-canto) ;
+  cheval : [Wiehern](https://commons.wikimedia.org/wiki/File:Wiehern.ogg) (Hü., domaine public) ;
+  alpaga : [Sheep bleating](https://commons.wikimedia.org/wiki/File:Sheep_bleating.ogg) (earthcalling, domaine public) ;
+  vache : [Cow in Vezo](https://commons.wikimedia.org/wiki/File:Cow_in_Vezo.ogg) (Gasybeaugosse2020, CC0).
 - Aliments 3D : sources et licences à compléter.
 
 ## Idées pour plus tard

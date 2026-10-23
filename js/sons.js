@@ -1,4 +1,4 @@
-// Bruitages synthétisés en Web Audio, sans fichier son. Deux tons : 'kawaii' (aigu, joyeux)
+// Bruitages synthétisés en Web Audio ; seuls les cris des animaux sont des enregistrements. Deux tons : 'kawaii' (aigu, joyeux)
 // et 'mechant' (grave, grondant). iOS exige debloquer() dans un geste utilisateur ;
 // le bouton silencieux de l'iPhone coupe aussi ces sons.
 
@@ -16,6 +16,7 @@ export function creerSons() {
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
     if (ctx.state === 'suspended') ctx.resume();
+    precharger();
   }
 
   // Enveloppe : montée rapide puis décroissance exponentielle jusqu'à `duree`.
@@ -54,65 +55,35 @@ export function creerSons() {
     src.stop(t + duree + 0.05);
   }
 
-  // Voix d'animal : dent de scie dont la hauteur suit `points` ([secondes, Hz]…), filtrée par des
-  // formants (les « voyelles »), tenue puis relâchée ; vibrato optionnel (Hz, profondeur en Hz).
-  function voix(points, decalage, volume, formants, vibrato = null) {
-    const t = ctx.currentTime + decalage;
-    const duree = points[points.length - 1][0];
-    const o = ctx.createOscillator();
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(points[0][1], t);
-    for (const [dt, f] of points.slice(1)) o.frequency.exponentialRampToValueAtTime(f, t + dt);
-    if (vibrato) {
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = vibrato[0];
-      const amplitude = ctx.createGain();
-      amplitude.gain.value = vibrato[1];
-      lfo.connect(amplitude).connect(o.frequency);
-      lfo.start(t);
-      lfo.stop(t + duree + 0.05);
+  // Cris des animaux : vrais enregistrements (sons/<clé d'espèce>.wav, voir le README pour les
+  // crédits), décodés une fois après le déblocage de l'audio. null : en cours de chargement.
+  const ESPECES_CRI = ['chat', 'chien', 'cheval', 'mouton', 'vache'];
+  const cris = {};
+  function precharger() {
+    for (const cle of ESPECES_CRI) {
+      if (cle in cris) continue;
+      cris[cle] = null;
+      fetch(`sons/${cle}.wav`)
+        .then((r) => r.arrayBuffer())
+        .then((donnees) => new Promise((ok, ko) => ctx.decodeAudioData(donnees, ok, ko)))
+        .then((tampon) => { cris[cle] = tampon; })
+        .catch((e) => { delete cris[cle]; console.error(e); });
     }
-    const sortie = ctx.createGain();
-    sortie.gain.setValueAtTime(0.0001, t);
-    sortie.gain.linearRampToValueAtTime(volume, t + Math.min(0.04, duree / 4));
-    sortie.gain.setValueAtTime(volume, t + duree * 0.7);
-    sortie.gain.linearRampToValueAtTime(0.0001, t + duree);
-    sortie.connect(ctx.destination);
-    for (const f of formants) {
-      const filtre = ctx.createBiquadFilter();
-      filtre.type = 'bandpass';
-      filtre.frequency.value = f;
-      filtre.Q.value = 3;
-      o.connect(filtre).connect(sortie);
-    }
-    o.start(t);
-    o.stop(t + duree + 0.05);
   }
-
-  // Cris des animaux du jeu, par clé d'espèce (js/especes.js).
-  const CRIS = {
-    chien: () => { // ouaf ouaf
-      voix([[0, 480], [0.06, 400], [0.14, 300]], 0, 0.3, [700, 1300]);
-      voix([[0, 500], [0.06, 420], [0.14, 310]], 0.2, 0.3, [700, 1300]);
-    },
-    chat: () => { // jappement aigu de renard
-      voix([[0, 900], [0.12, 1700]], 0, 0.22, [1500, 3000]);
-      voix([[0, 1500], [0.22, 700]], 0.13, 0.22, [1400, 2800], [30, 60]);
-    },
-    cheval: () => { // hennissement : montée, puis chute tremblée
-      voix([[0, 450], [0.25, 950], [0.9, 380]], 0, 0.3, [800, 2100], [14, 45]);
-    },
-    mouton: () => { // mèèè tremblé
-      voix([[0, 380], [0.15, 470], [0.65, 400]], 0, 0.3, [900, 1800], [28, 55]);
-    },
-    vache: () => { // meuh : grave, qui monte un peu puis retombe
-      voix([[0, 110], [0.3, 150], [0.95, 95]], 0, 0.45, [500, 1000], [5, 6]);
-    },
-  };
+  function crier(cle) {
+    const g = ctx.createGain();
+    g.gain.value = 0.85;
+    g.connect(ctx.destination);
+    const src = ctx.createBufferSource();
+    src.buffer = cris[cle];
+    src.connect(g);
+    src.start();
+  }
   const DELAI_CRI_MS = 6000; // entre deux cris, pour ne pas saturer
   let dernierCri = -Infinity;
 
   const pret = () => ctx && ctx.state === 'running';
+  const aCri = (cle) => !!cris[cle];
 
   return {
     debloquer,
@@ -120,9 +91,9 @@ export function creerSons() {
     // Cri de l'animal d'espèce `cle` à son apparition ; rien pour un aliment, ni si le dernier cri
     // est trop récent (une détection qui clignote le ferait répéter).
     cri(cle, t = performance.now()) {
-      if (!pret() || !CRIS[cle] || t - dernierCri < DELAI_CRI_MS) return;
+      if (!pret() || !aCri(cle) || t - dernierCri < DELAI_CRI_MS) return;
       dernierCri = t;
-      CRIS[cle]();
+      crier(cle);
     },
 
     lancer() {
@@ -151,9 +122,9 @@ export function creerSons() {
     // Fuite : l'animal pousse son cri (toujours, sans délai) ; un aliment fait son bruit de fuite.
     fuite(ton, cle) {
       if (!pret()) return;
-      if (CRIS[cle]) {
+      if (aCri(cle)) {
         dernierCri = performance.now();
-        CRIS[cle]();
+        crier(cle);
       } else if (ton === 'kawaii') {
         note('sine', 600, 1300, 0, 0.18, 0.25);
         note('sine', 700, 1500, 0.2, 0.18, 0.25);

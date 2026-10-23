@@ -44,7 +44,7 @@ export function creerRendu(canvasVideo, canvas) {
     ctx.closePath();
   }
 
-  // Viseur discret au centre de l'écran : deux anneaux très fins et translucides qui « respirent »,
+  // Viseur discret au centre de l'écran : deux anneaux fins et translucides qui « respirent »,
   // ombre légère du point d'impact et, si la main attend, arc pointillé du lancer prévu (chemin(u)
   // → point écran, u de 0 à 1) dont les points avancent vers la cible. t : horloge en ms.
   function viseur(t, chemin) {
@@ -52,13 +52,13 @@ export function creerRendu(canvasVideo, canvas) {
     const cy = hauteur / 2;
     const r = Math.min(largeur, hauteur) * 0.1 * (1 + 0.04 * Math.sin((t / 1300) * 2 * Math.PI));
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 2;
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 3;
 
     if (chemin) {
       const n = 22;
       const phase = (t / 700) % 1;
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
       for (let i = 0; i < n; i++) {
         const u = (i + phase) / n;
         const p = chemin(u);
@@ -70,14 +70,14 @@ export function creerRendu(canvasVideo, canvas) {
     }
 
     ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.beginPath();
     ctx.ellipse(cx, cy + r * 0.12, r * 0.45, r * 0.14, 0, 0, 2 * Math.PI);
     ctx.fill();
 
-    ctx.shadowBlur = 2;
-    ctx.lineWidth = 1;
-    for (const [k, couleur] of [[1, 'rgba(255,255,255,0.45)'], [0.5, 'rgba(255,110,90,0.55)']]) {
+    ctx.shadowBlur = 3;
+    ctx.lineWidth = 1.6;
+    for (const [k, couleur] of [[1, 'rgba(255,255,255,0.7)'], [0.5, 'rgba(255,110,90,0.8)']]) {
       ctx.beginPath();
       ctx.arc(cx, cy, r * k, 0, 2 * Math.PI);
       ctx.strokeStyle = couleur;
