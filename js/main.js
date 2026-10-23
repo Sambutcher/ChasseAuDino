@@ -6,6 +6,8 @@ import { demarrerCamera, arreterCamera, relancerAuRetour } from './camera.js';
 import { suivrePosition, garderEcranAllume } from './position.js';
 import { creerCourse } from './course.js';
 import { chargerDetecteur, detecter } from './detector.js';
+import { chargerPose, estimerPose } from './pose.js';
+import { classePose, combiner, lacetDe, orientation, versZone, zonePose } from './posture.js';
 import { creerRendu } from './render.js';
 import { creerCreatures } from './creatures.js';
 import { creerSons } from './sons.js';
@@ -16,6 +18,9 @@ import { nouvelEtat, debloquerTir, finSerie, voirCreature, quitterCreature, tire
 import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, placementVideo } from './geometry.js';
 
 const URL_MODELE = 'models/yolo11n/model.json';
+const URL_POSE = 'models/pose/model.json';
+const INTERVALLE_POSE_MS = 300; // entre deux estimations de posture de l'animal suivi
+const ESTIMATIONS_POSE = 3; // dernières estimations moyennées
 const ZOOM = 1.5; // zoom numérique de l'image affichée
 const INTERVALLE_DETECTION_MS = 80;
 const LARGEUR_FLUX = 120; // largeur de l'image réduite pour le flux optique
@@ -67,9 +72,13 @@ boutonDemarrer.addEventListener('click', async () => {
     statut.textContent = 'Chargement du détecteur…';
     const entree = await chargerDetecteur(URL_MODELE);
     statut.textContent = 'Réveil des créatures…';
+    statut.textContent = 'Chargement de la posture…';
+    // Sans le modèle de pose, les créatures regardent simplement vers le centre de l'écran.
+    const pose = await chargerPose(URL_POSE).catch((e) => { console.warn('Posture indisponible :', e); return null; });
+    statut.textContent = 'Réveil des créatures…';
     const creatures = await creerCreatures(canvasCreatures, { quandHumeur: (e) => sons.humeur(e.ton) });
     accueil.hidden = true;
-    lancerPartie(entree, creatures);
+    lancerPartie(entree, creatures, pose);
   } catch (e) {
     console.error(e);
     statut.textContent = `Impossible de démarrer : ${e.message || e}`;
@@ -77,7 +86,7 @@ boutonDemarrer.addEventListener('click', async () => {
   }
 });
 
-function lancerPartie(entree, creatures) {
+function lancerPartie(entree, creatures, pose) {
   const rendu = creerRendu(canvasVideo, canvas);
   let etat = nouvelEtat();
 
@@ -119,8 +128,17 @@ function lancerPartie(entree, creatures) {
   canvasEntree.width = entree.largeur;
   canvasEntree.height = entree.hauteur;
   const ctxEntree = canvasEntree.getContext('2d', { willReadFrequently: true });
-  let detectionEnCours = false;
+  let detectionEnCours = false; // une seule inférence à la fois (détection ou posture)
   let derniereDetection = 0;
+  const canvasPose = document.createElement('canvas'); // carré autour de l'animal suivi
+  if (pose) {
+    canvasPose.width = pose.largeur;
+    canvasPose.height = pose.hauteur;
+  }
+  const ctxPose = canvasPose.getContext('2d', { willReadFrequently: true });
+  let dernierePose = 0;
+  let historiquePose = []; // dernières orientations estimées de l'animal suivi
+  let lacetPose = null; // angle de la créature d'après la posture, null tant qu'inconnu
   let cycleDetection = 0;
 
   const canvasFlux = document.createElement('canvas'); // image réduite en gris pour le flux optique
@@ -267,6 +285,25 @@ function lancerPartie(entree, creatures) {
       .finally(() => { detectionEnCours = false; });
   }
 
+  // Posture de l'animal suivi : carré découpé autour de lui, estimé par yolo11n-pose ; l'orientation
+  // (profil, sens, dos) des dernières estimations donne l'angle de la créature.
+  function lancerPose(c, t) {
+    detectionEnCours = true;
+    dernierePose = t;
+    const suiviLancement = suivi;
+    const zone = zonePose(cible, rendu.largeur, rendu.hauteur);
+    dessinerVideo(ctxPose, c, zone, { x: 0, y: 0, w: canvasPose.width, h: canvasPose.height });
+    estimerPose(canvasPose, classePose(cible.classe))
+      .then((detection) => {
+        if (suivi !== suiviLancement) return; // série terminée entre-temps
+        historiquePose = [...historiquePose, detection ? orientation(detection) : null].slice(-ESTIMATIONS_POSE);
+        const o = combiner(historiquePose);
+        lacetPose = o ? lacetDe(o) : null;
+      })
+      .catch((e) => console.error(e))
+      .finally(() => { detectionEnCours = false; });
+  }
+
   function imageCourse() {
     const e = course.etat();
     boutonTir.disabled = e.phase !== 'fini' || allumageCamera;
@@ -277,21 +314,29 @@ function lancerPartie(entree, creatures) {
     if (!video.videoWidth) return; // caméra pas encore prête
     const c = cadrage(video.videoWidth, video.videoHeight, rendu.largeur, rendu.hauteur, ZOOM);
     suivreImage(c);
-    if (!detectionEnCours && t - derniereDetection >= INTERVALLE_DETECTION_MS) lancerDetection(c, t);
-
     const lu = suivi.lire(t);
     cible = lu.actif ? lu.cible : null;
+    if (!detectionEnCours && t - derniereDetection >= INTERVALLE_DETECTION_MS) {
+      const posturable = pose && cible && !estVoiture(cible.classe) && !etat.issue && classePose(cible.classe) >= 0;
+      if (posturable && t - dernierePose >= INTERVALLE_POSE_MS) lancerPose(c, t);
+      else lancerDetection(c, t);
+    }
+
     if (cible && !etat.cibleVisible) {
       etat = voirCreature(etat, etat.issue ? etat.espece : especeDe(cible.classe));
     } else if (!cible && etat.cibleVisible) {
       etat = quitterCreature(etat);
+    }
+    if (!cible) {
+      historiquePose = [];
+      lacetPose = null;
     }
     const visible = cible && etat.cibleVisible;
 
     rendu.effacer();
     rendu.video(video, c);
     if (!etat.issue) {
-      if (visible) creatures.montrer(etat.espece, cible, t);
+      if (visible) creatures.montrer(etat.espece, cible, t, lacetPose);
       else creatures.cacher();
     }
     creatures.dessiner(t);

@@ -9,7 +9,7 @@
   three.js simples dans la scène des créatures) la lance en cloche vers le viseur ; à l'impact, la
   créature touchée explose, ratée elle s'enfuit → course… Dans le code, `cartouches` compte les tomates. Bouton « Skip » sur
   l'écran de course : tir sans courir. Pas de mode debug ni de simulation GPS.
-- Branches : `v1-stable-sans-posture` (par défaut, en ligne) = YOLO seul, sans orientation ;
+- Branches : `v1-stable-sans-posture` (par défaut, en ligne ; depuis 1.4.0 elle a la posture, nom conservé) ;
   `avec-posture` = essais de posture RTMPose (orientation des créatures), abandonnés : saturait
   la mémoire de l'iPhone SE en WebGL comme en WebAssembly. Espèces désignées par une clé
   (`'vache'`, `'mage'`…).
@@ -19,6 +19,13 @@
   texture 512 px par `tools/alleger_modeles.py` (venv hors dépôt : numpy, meshoptimizer, pillow ;
   sources dans `Téléchargements/`, ignoré par git), animés **en code** par `js/animation.js`
   (respiration, saut/tortillement, fuite en sautillant). Avant du modèle = +Z.
+- **Posture des animaux (1.4.0)** : `yolo11n-pose` entraîné sur Animal Pose (Kaggle,
+  `tools/preparer_pose.py` + `tools/entrainer_pose.py`, poids dans `pose/best.pt`, converti en TF.js par
+  le workflow `export-pose.yml` dans `models/pose/`, entrée carrée 256 px, ~6 Mo). `js/pose.js` l'exécute
+  sur un carré autour de l'animal suivi toutes les 300 ms (une seule inférence à la fois avec la
+  détection) ; `js/posture.js` (pur) déduit profil, sens et dos des points clés, le lacet est passé à
+  `creatures.montrer`. Sans modèle ou sans estimation : créature tournée vers le centre. Pas de
+  repli par ratio de boîte. Voitures sans orientation tant que l'étape 3 n'est pas faite.
 - Voitures (COCO 2) → un aliment tiré au hasard à chaque apparition (burger, croissant, éclair,
   frites, sushi) ; .glb convertis par `tools/convertir_nourriture.py`.
 - 3D : three.js 0.170.0 copié dans `vendor/` (imports réécrits en relatif, pas d'import map).
@@ -30,7 +37,7 @@
 - Vidéo : toujours dessinée entière (`placementVideo` de `js/geometry.js`), jamais découpée.
   Ne pas surveiller `video.currentTime` : avec un flux caméra, Safari iOS ne le fait pas avancer
   de façon fiable (un « gardien » basé dessus redémarrait la caméra sans cesse).
-- Logique pure (`js/game.js`, `js/especes.js`, `js/geometry.js`, `js/tracker.js`,
+- Logique pure (`js/game.js`, `js/especes.js`, `js/posture.js`, `js/animation.js`, `js/geometry.js`, `js/tracker.js`,
   `js/flow.js`, `js/course.js`) et préparation des modèles (`preparer`, `creerExplosion` de
   `js/creatures.js`, three.js sous Node sans WebGL, `tests/aide-three.js` pour les textures)
   testées par `node --test tests/` (Node 18 apt, pas de npm).

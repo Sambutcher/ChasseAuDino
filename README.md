@@ -64,6 +64,8 @@ contexte WebGL, le jeu affiche « Mémoire saturée, redémarrage… » et se re
 | `js/main.js` | démarrage, boucle d'affichage, lancer et impact |
 | `js/especes.js` | bestiaire : cible COCO → créature, voiture → aliment au hasard (pur, testé) |
 | `js/creatures.js` | créatures three.js : placement, mimiques, explosion, fuite, test de touche |
+| `js/posture.js` | orientation d'un animal d'après ses 20 points clés : profil, sens, dos (pur, testé) |
+| `js/pose.js` | yolo11n-pose via TensorFlow.js : estimation sur un carré autour de l'animal |
 | `js/lancer.js` | main et tomate three.js : lancer en cloche vers le viseur, impact |
 | `js/sons.js` | bruitages Web Audio synthétisés |
 | `js/camera.js` | caméra arrière, relance de la lecture au retour sur la page |

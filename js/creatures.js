@@ -83,9 +83,10 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     return m;
   }
 
-  // Créature posée sur la boîte écran de la cible : pieds en bas (ou au centre si elle vole),
-  // hauteur de la boîte, largeur bornée, légèrement tournée vers le centre de l'écran.
-  function montrer(cle, boite, t = performance.now()) {
+  // Créature posée sur la boîte écran de la cible : pieds en bas, hauteur de la boîte, largeur
+  // bornée, tournée selon `lacetVoulu` (posture de l'animal, js/posture.js) ou, sans lui,
+  // légèrement vers le centre de l'écran.
+  function montrer(cle, boite, t = performance.now(), lacetVoulu = null) {
     if (mode === 'fuite' || mode === 'explosion') return;
     const m = choisir(cle, t);
     if (!m) return;
@@ -93,7 +94,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     const x = boite.x + boite.w / 2;
     const y = boite.y + boite.h;
     const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - x) / (largeur / 2)));
-    const l = 0.6 * versCentre;
+    const l = lacetVoulu ?? 0.6 * versCentre;
     // Largeur de la créature (en hauteurs) sous cet angle, pour borner sa taille à la boîte.
     const ratio = m.ratioFace * Math.abs(Math.cos(l)) + m.ratioProfil * Math.abs(Math.sin(l));
     const s = Math.max(40, Math.min(boite.h * 1.05, (boite.w * 1.6) / ratio));
