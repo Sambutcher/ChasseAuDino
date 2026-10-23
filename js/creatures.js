@@ -25,9 +25,8 @@ const PALETTES = {
   mechant: { flash: '#ffb347', particules: ['#ffdd55', '#ff8a00', '#ff3b00', '#b31b00'], fumee: ['#2a2a2a', '#444', '#5a5248'] },
 };
 
-// options.base : préfixe des chemins des modèles (page hors racine) ;
-// options.quandHumeur(espece) : la créature fait une mimique (pour le son).
-export async function creerCreatures(canvas, { base = '', quandHumeur = () => {} } = {}) {
+// options.base : préfixe des chemins des modèles (page hors racine).
+export async function creerCreatures(canvas, { base = '' } = {}) {
   // Sans anticrénelage et densité plafonnée : la mémoire graphique de l'iPhone SE est à la limite.
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
   renderer.setClearColor(0x000000, 0);
@@ -173,7 +172,6 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     if (mode !== 'suivi' || t < prochaineHumeur || !m.mimiques) return;
     m.mimique(Math.floor(Math.random() * m.mimiques));
     prochaineHumeur = t + delaiHumeur(m.espece);
-    quandHumeur(m.espece);
   }
 
   function avancerFuite(dt) {

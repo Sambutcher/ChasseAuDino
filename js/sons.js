@@ -91,34 +91,5 @@ export function creerSons() {
         [0, 0.18, 0.36].forEach((d) => note('sawtooth', 170, 110, d, 0.15, 0.12)); // ricanement
       }
     },
-
-    humeur(ton) {
-      if (!pret()) return;
-      if (ton === 'kawaii') {
-        note('sine', 900, 1500, 0, 0.12, 0.12); // pouic
-      } else {
-        // Grognement : dent de scie grave modulée en amplitude, filtrée.
-        const t = ctx.currentTime;
-        const o = ctx.createOscillator();
-        o.type = 'sawtooth';
-        o.frequency.setValueAtTime(85, t);
-        o.frequency.linearRampToValueAtTime(65, t + 0.6);
-        const trem = ctx.createOscillator();
-        trem.frequency.value = 22;
-        const profondeur = ctx.createGain();
-        profondeur.gain.value = 0.5;
-        const ampli = ctx.createGain();
-        ampli.gain.value = 0.5;
-        trem.connect(profondeur).connect(ampli.gain);
-        const f = ctx.createBiquadFilter();
-        f.type = 'lowpass';
-        f.frequency.value = 500;
-        o.connect(ampli).connect(f).connect(enveloppe(t, 0.6, 0.3));
-        o.start(t);
-        trem.start(t);
-        o.stop(t + 0.65);
-        trem.stop(t + 0.65);
-      }
-    },
   };
 }
