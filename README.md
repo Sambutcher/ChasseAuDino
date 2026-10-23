@@ -34,12 +34,12 @@ Inspirée de [Street Biathlon](https://github.com/Sambutcher/StreetBiathlon), do
 
 1. Ouvrir https://sambutcher.github.io/ChasseAuxBebetes/ dans Safari.
 2. Partager → **Sur l'écran d'accueil** (une première ouverture en ligne met tout en cache).
-3. Lancer, **Démarrer**, autoriser la localisation, puis la caméra au premier « Position de tir ».
+3. Lancer, **Démarrer**, autoriser la localisation, puis la caméra au premier « Lancer de tomate ».
 
 Une partie alterne **course** et **tir** :
 - **Course** (caméra éteinte pour la batterie) : s'éloigner de **100 m à vol d'oiseau** du point de
   départ, mesuré au GPS. Garder l'écran allumé (iOS coupe le GPS écran verrouillé).
-- Au-delà de 100 m, le bouton **Position de tir** s'active : il rallume la caméra et met
+- Au-delà de 100 m, le bouton **Lancer de tomate** s'active : il rallume la caméra et met
   **une tomate** dans la main (en bas à droite). Le bouton **Skip** fait de même sans courir.
 - **Tir** : trouvez un animal ou une voiture, la croix au centre sur la créature, un tap = la main lance la
   tomate en cloche vers la croix. Touchée à l'impact, la créature explose ; ratée (la croix hors de sa

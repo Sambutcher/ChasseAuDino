@@ -4,7 +4,7 @@
   YOLO11n, flux optique, suivi, PWA). Un correctif du socle vaut souvent pour les deux projets.
 - PWA **vanilla JS sans build** (modules ES), cible iPhone SE 3ᵉ gén. (Safari), hors ligne.
   Ne pas introduire de bundler ni de framework. Licence AGPL-3.0.
-- Partie = course (100 m à vol d'oiseau au GPS, caméra éteinte) → « Position de tir » → **une seule
+- Partie = course (100 m à vol d'oiseau au GPS, caméra éteinte) → « Lancer de tomate » → **une seule
   tomate** (depuis 1.2.0, à la place de la cartouche) : une main 3D (`js/lancer.js`, géométries
   three.js simples dans la scène des créatures) la lance en cloche vers le viseur ; à l'impact, la
   créature touchée explose, ratée elle s'enfuit → course… Dans le code, `cartouches` compte les tomates. Bouton « Skip » sur

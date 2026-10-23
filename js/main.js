@@ -135,7 +135,7 @@ function lancerPartie(entree, creatures) {
   const ctxCouleur = canvasCouleur.getContext('2d', { willReadFrequently: true });
   let votesCouleur = [];
 
-  // « Position de tir » (après 100 m) ou « Skip » (sans courir) : rallume la caméra (geste
+  // « Lancer de tomate » (après 100 m) ou « Skip » (sans courir) : rallume la caméra (geste
   // utilisateur, exigé par iOS) et donne une tomate.
   async function allerAuTir() {
     if (allumageCamera) return;
