@@ -19,9 +19,8 @@
   texture 512 px par `tools/alleger_modeles.py` (venv hors dépôt : numpy, meshoptimizer, pillow ;
   sources dans `Téléchargements/`, ignoré par git), animés **en code** par `js/animation.js`
   (respiration, saut/tortillement, fuite en sautillant). Avant du modèle = +Z.
-- Voitures (COCO 2) → aliments (burger, croissant, éclair, frites, sushi) selon la couleur de la
-  carrosserie (`js/couleur.js`, `ALIMENTS_VOITURE`) ; .glb convertis par
-  `tools/convertir_nourriture.py` (textures du burger : viande et fromage en couleur de secours).
+- Voitures (COCO 2) → un aliment tiré au hasard à chaque apparition (burger, croissant, éclair,
+  frites, sushi) ; .glb convertis par `tools/convertir_nourriture.py`.
 - 3D : three.js 0.170.0 copié dans `vendor/` (imports réécrits en relatif, pas d'import map).
   Trois canvas superposés : `#jeu` (vidéo 2D), `#creatures` (WebGL), `#hud` (interface 2D, reçoit les taps).
 - **Mémoire graphique de l'iPhone SE à la limite** (TF.js + three.js) : TF.js libère ses textures
@@ -31,7 +30,7 @@
 - Vidéo : toujours dessinée entière (`placementVideo` de `js/geometry.js`), jamais découpée.
   Ne pas surveiller `video.currentTime` : avec un flux caméra, Safari iOS ne le fait pas avancer
   de façon fiable (un « gardien » basé dessus redémarrait la caméra sans cesse).
-- Logique pure (`js/game.js`, `js/especes.js`, `js/couleur.js`, `js/geometry.js`, `js/tracker.js`,
+- Logique pure (`js/game.js`, `js/especes.js`, `js/geometry.js`, `js/tracker.js`,
   `js/flow.js`, `js/course.js`) et préparation des modèles (`preparer`, `creerExplosion` de
   `js/creatures.js`, three.js sous Node sans WebGL, `tests/aide-three.js` pour les textures)
   testées par `node --test tests/` (Node 18 apt, pas de npm).

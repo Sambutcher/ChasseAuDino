@@ -20,7 +20,7 @@ ALIMENTS = {
     "burgerall": "burger",
     "croissant": "croissant",
     "eclair": "eclair",
-    "friesbowlwithketchupandfrie": "frites",
+    "friespocketwithFries": "frites",
     "SushisSalmon": "sushi",
 }
 # Matériau → couleur de secours quand son image manque.

@@ -11,15 +11,8 @@ les change en **créatures 3D**. Une seule tomate à lancer : touchée, la créa
 | chien | chiot | kawaii |
 | mouton | panda | kawaii |
 
-Les **voitures** deviennent un aliment selon leur couleur :
-
-| Couleur | Aliment |
-|---|---|
-| rouge | burger |
-| jaune, orange | croissant |
-| verte, bleue, violette | sushi |
-| grise, blanche | barquette de frites |
-| noire | éclair |
+Les **voitures** deviennent un aliment tiré au hasard (burger, croissant, sushi, barquette de
+frites ou éclair).
 
 Les créatures sautillent, font coucou (animations en code, `js/animation.js`) et explosent en
 étoiles colorées.
@@ -69,8 +62,7 @@ contexte WebGL, le jeu affiche « Mémoire saturée, redémarrage… » et se re
 | Fichier | Rôle |
 |---|---|
 | `js/main.js` | démarrage, boucle d'affichage, lancer et impact |
-| `js/especes.js` | bestiaire : cible COCO → créature, couleur → personnage (pur, testé) |
-| `js/couleur.js` | couleur d'une voiture d'après sa carrosserie (pur, testé) |
+| `js/especes.js` | bestiaire : cible COCO → créature, voiture → aliment au hasard (pur, testé) |
 | `js/creatures.js` | créatures three.js : placement, mimiques, explosion, fuite, test de touche |
 | `js/lancer.js` | main et tomate three.js : lancer en cloche vers le viseur, impact |
 | `js/sons.js` | bruitages Web Audio synthétisés |

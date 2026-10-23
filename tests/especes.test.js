@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ESPECES, CLASSES, ALIMENTS_VOITURE, especeDe, estVoiture, filtrerEspece, messageIssue,
+  ESPECES, CLASSES, especeDe, estVoiture, filtrerEspece, messageIssue,
 } from '../js/especes.js';
 import { decoder } from '../js/detector.js';
 
@@ -20,23 +20,17 @@ test('cibles : voiture et les 5 animaux COCO', () => {
   assert.deepEqual(animaux.map((a) => ESPECES[a].ton), ['kawaii', 'kawaii', 'kawaii', 'kawaii', 'kawaii']);
 });
 
-test('especeDe : animal par sa classe, voiture par sa couleur', () => {
+test('especeDe : animal par sa classe, voiture par un aliment tiré au hasard', () => {
   assert.equal(especeDe(19), 'vache');
   assert.equal(especeDe(15), 'chat');
-  assert.equal(especeDe(2, 'bleu'), 'sushi');
-  assert.equal(especeDe(2, 'rouge'), 'burger');
-  assert.equal(especeDe(2, null), 'frites', 'couleur inconnue : gris');
   assert.equal(especeDe(0), null);
   assert.ok(estVoiture(2) && !estVoiture(16));
-});
-
-test('chaque couleur de voiture mène à un aliment existant ; chaque aliment a sa couleur', () => {
-  for (const [couleur, cle] of Object.entries(ALIMENTS_VOITURE)) {
-    assert.ok(ESPECES[cle], `${couleur} → ${cle} absent`);
-    assert.equal(ESPECES[cle].classe, 2);
-  }
   const aliments = Object.keys(ESPECES).filter((c) => ESPECES[c].classe === 2);
-  assert.deepEqual([...new Set(Object.values(ALIMENTS_VOITURE))].sort(), aliments.sort());
+  assert.deepEqual(aliments, ['burger', 'croissant', 'eclair', 'frites', 'sushi']);
+  assert.equal(especeDe(2, () => 0), 'burger');
+  assert.equal(especeDe(2, () => 0.999), 'sushi');
+  const tires = new Set(Array.from({ length: 200 }, () => especeDe(2)));
+  assert.equal(tires.size, aliments.length, 'tous les aliments sortent');
 });
 
 test('les modèles sont statiques : aucune animation dans les .glb', () => {

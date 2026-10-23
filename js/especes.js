@@ -1,5 +1,5 @@
 // Bestiaire : chaque cible détectée (classe COCO) est remplacée par une créature 3D. Les animaux
-// ont chacun leur créature ; les voitures, un aliment selon leur couleur.
+// ont chacun leur créature ; les voitures, un aliment tiré au hasard.
 // Logique pure, sans navigateur : table des espèces, messages.
 
 const VOITURE = 2; // classe COCO « car »
@@ -28,24 +28,15 @@ export const ESPECES = {
   sushi: aliment('sushi', 'sushi'),
 };
 
-// Couleur de la voiture → aliment.
-export const ALIMENTS_VOITURE = {
-  rouge: 'burger', // ketchup
-  orange: 'croissant',
-  jaune: 'croissant',
-  vert: 'sushi', // algue et avocat
-  bleu: 'sushi',
-  violet: 'sushi',
-  gris: 'frites', // aussi la couleur par défaut
-  blanc: 'frites',
-  noir: 'eclair', // glaçage au chocolat
-};
-
 export const CLASSES = [...new Set(Object.values(ESPECES).map((e) => e.classe))].sort((a, b) => a - b);
 
-// Espèce d'une cible : par sa classe, et pour une voiture par sa couleur (gris faute de mieux).
-export function especeDe(classe, couleur = null) {
-  if (classe === VOITURE) return ALIMENTS_VOITURE[couleur] ?? ALIMENTS_VOITURE.gris;
+// Espèce d'une cible : par sa classe ; une voiture devient un aliment tiré au hasard
+// (hasard : fonction de tirage dans [0, 1[, injectable pour les tests).
+export function especeDe(classe, hasard = Math.random) {
+  if (classe === VOITURE) {
+    const aliments = Object.keys(ESPECES).filter((cle) => ESPECES[cle].classe === VOITURE);
+    return aliments[Math.floor(hasard() * aliments.length)];
+  }
   return Object.keys(ESPECES).find((cle) => ESPECES[cle].classe === classe) ?? null;
 }
 

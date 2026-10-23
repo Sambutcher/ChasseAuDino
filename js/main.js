@@ -1,6 +1,6 @@
 // Boucle du jeu : une partie alterne course (GPS, caméra éteinte) et tir, un lancer de tomate
 // (caméra, détection des animaux et des voitures par YOLO, créature 3D suivie par flux optique).
-// La logique pure vit dans game.js, especes.js, couleur.js, course.js, tracker.js, flow.js et geometry.js ; ce
+// La logique pure vit dans game.js, especes.js, course.js, tracker.js, flow.js et geometry.js ; ce
 // fichier relie le navigateur (caméra, GPS, canvas, three.js, sons) à cette logique.
 import { demarrerCamera, arreterCamera, relancerAuRetour } from './camera.js';
 import { suivrePosition, garderEcranAllume } from './position.js';
@@ -10,14 +10,12 @@ import { creerRendu } from './render.js';
 import { creerCreatures } from './creatures.js';
 import { creerSons } from './sons.js';
 import { ESPECES, especeDe, estVoiture, filtrerEspece, messageIssue } from './especes.js';
-import { couleurVoiture, majorite, zoneCarrosserie } from './couleur.js';
 import { creerSuivi } from './tracker.js';
 import { versGris, estimerDecalage } from './flow.js';
 import { nouvelEtat, debloquerTir, finSerie, voirCreature, quitterCreature, tirer } from './game.js';
 import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, placementVideo } from './geometry.js';
 
 const URL_MODELE = 'models/yolo11n/model.json';
-const VOTES_COULEUR = 5; // images analysées avant de choisir le personnage d'une voiture
 const ZOOM = 1.5; // zoom numérique de l'image affichée
 const INTERVALLE_DETECTION_MS = 80;
 const LARGEUR_FLUX = 120; // largeur de l'image réduite pour le flux optique
@@ -129,12 +127,6 @@ function lancerPartie(entree, creatures) {
   const ctxFlux = canvasFlux.getContext('2d', { willReadFrequently: true });
   let grisPrec = null;
 
-  const canvasCouleur = document.createElement('canvas'); // carrosserie réduite d'une voiture
-  canvasCouleur.width = 32;
-  canvasCouleur.height = 12;
-  const ctxCouleur = canvasCouleur.getContext('2d', { willReadFrequently: true });
-  let votesCouleur = [];
-
   // « Lancer de tomate » (après 100 m) ou « Skip » (sans courir) : rallume la caméra (geste
   // utilisateur, exigé par iOS) et donne une tomate.
   async function allerAuTir() {
@@ -154,7 +146,6 @@ function lancerPartie(entree, creatures) {
     suivi = creerSuivi();
     grisPrec = null;
     cible = null;
-    votesCouleur = [];
     etat = debloquerTir(etat);
     pasDeTir.hidden = true;
   }
@@ -276,17 +267,6 @@ function lancerPartie(entree, creatures) {
       .finally(() => { detectionEnCours = false; });
   }
 
-  // Espèce d'une cible qui apparaît : directe pour un animal ; pour une voiture, d'après la
-  // couleur de sa carrosserie votée sur plusieurs images (null tant que le vote n'est pas fini).
-  function especeCible(c, boite) {
-    if (!estVoiture(boite.classe)) return especeDe(boite.classe);
-    ctxCouleur.fillStyle = 'rgb(114,114,114)';
-    ctxCouleur.fillRect(0, 0, canvasCouleur.width, canvasCouleur.height);
-    dessinerVideo(ctxCouleur, c, zoneCarrosserie(boite), { x: 0, y: 0, w: canvasCouleur.width, h: canvasCouleur.height });
-    votesCouleur.push(couleurVoiture(ctxCouleur.getImageData(0, 0, canvasCouleur.width, canvasCouleur.height).data));
-    return votesCouleur.length < VOTES_COULEUR ? null : especeDe(boite.classe, majorite(votesCouleur));
-  }
-
   function imageCourse() {
     const e = course.etat();
     boutonTir.disabled = e.phase !== 'fini' || allumageCamera;
@@ -302,12 +282,10 @@ function lancerPartie(entree, creatures) {
     const lu = suivi.lire(t);
     cible = lu.actif ? lu.cible : null;
     if (cible && !etat.cibleVisible) {
-      const cle = etat.issue ? etat.espece : especeCible(c, cible);
-      if (cle) etat = voirCreature(etat, cle);
+      etat = voirCreature(etat, etat.issue ? etat.espece : especeDe(cible.classe));
     } else if (!cible && etat.cibleVisible) {
       etat = quitterCreature(etat);
     }
-    if (!cible) votesCouleur = [];
     const visible = cible && etat.cibleVisible;
 
     rendu.effacer();
