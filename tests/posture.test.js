@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLASSES_POSE, classePose, decoderPose, orientation, combiner, lacetDe, zonePose, versZone } from '../js/posture.js';
+import { CLASSES_POSE, classePose, decoderPose, orientation, combiner, estimationStable, lacetDe, zonePose, versZone } from '../js/posture.js';
 import { ESPECES } from '../js/especes.js';
 
 // Points clés d'un animal : seuls les indices donnés sont surs (x, y).
@@ -88,4 +88,14 @@ test('zone de pose : carré autour de la cible avec marge, borné à l\'écran',
 test('versZone : de l\'entrée carrée vers l\'écran', () => {
   const b = versZone({ x: 64, y: 128, w: 128, h: 64 }, { x: 10, y: 20, w: 512, h: 512 }, 256);
   assert.deepEqual(b, { x: 138, y: 276, w: 256, h: 128 });
+});
+
+test('estimation stable : trois estimations concordantes seulement', () => {
+  const o = (profil, sens = 1, dos = false) => ({ profil, sens, dos });
+  assert.ok(estimationStable([o(0.8), o(0.85), o(0.9)]));
+  assert.ok(!estimationStable([o(0.8), o(0.85)]), 'pas assez d\'estimations');
+  assert.ok(!estimationStable([o(0.8), null, o(0.9)]), 'une estimation manquante');
+  assert.ok(!estimationStable([o(0.8), o(0.8, -1), o(0.8)]), 'sens différent');
+  assert.ok(!estimationStable([o(0.2), o(0.5), o(0.8)]), 'profil qui change');
+  assert.ok(!estimationStable([o(0.1), o(0.1, 1, true), o(0.1)]), 'dos différent');
 });

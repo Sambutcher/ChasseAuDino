@@ -7,7 +7,7 @@ import { suivrePosition, garderEcranAllume } from './position.js';
 import { creerCourse } from './course.js';
 import { chargerDetecteur, detecter } from './detector.js';
 import { chargerPose, estimerPose } from './pose.js';
-import { classePose, combiner, lacetDe, orientation, versZone, zonePose } from './posture.js';
+import { classePose, combiner, estimationStable, lacetDe, orientation, zonePose } from './posture.js';
 import { creerRendu } from './render.js';
 import { creerCreatures } from './creatures.js';
 import { creerSons } from './sons.js';
@@ -19,7 +19,10 @@ import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, placementVi
 
 const URL_MODELE = 'models/yolo11n/model.json';
 const URL_POSE = 'models/pose/model.json';
-const INTERVALLE_POSE_MS = 300; // entre deux estimations de posture de l'animal suivi
+// Entre deux estimations de posture de l'animal suivi : chaque inférence bloque un instant le fil
+// principal, donc rares ; plus espacées encore quand la posture est stable.
+const INTERVALLE_POSE_MS = 500;
+const INTERVALLE_POSE_STABLE_MS = 1200;
 const ESTIMATIONS_POSE = 3; // dernières estimations moyennées
 const ZOOM = 1.5; // zoom numérique de l'image affichée
 const INTERVALLE_DETECTION_MS = 80;
@@ -317,8 +320,10 @@ function lancerPartie(entree, creatures, pose) {
     const lu = suivi.lire(t);
     cible = lu.actif ? lu.cible : null;
     if (!detectionEnCours && t - derniereDetection >= INTERVALLE_DETECTION_MS) {
-      const posturable = pose && cible && !estVoiture(cible.classe) && !etat.issue && classePose(cible.classe) >= 0;
-      if (posturable && t - dernierePose >= INTERVALLE_POSE_MS) lancerPose(c, t);
+      const posturable = pose && cible && !estVoiture(cible.classe) && !etat.issue && !creatures.lancerEnCours
+        && classePose(cible.classe) >= 0;
+      const delaiPose = estimationStable(historiquePose, ESTIMATIONS_POSE) ? INTERVALLE_POSE_STABLE_MS : INTERVALLE_POSE_MS;
+      if (posturable && t - dernierePose >= delaiPose) lancerPose(c, t);
       else lancerDetection(c, t);
     }
 

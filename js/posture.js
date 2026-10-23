@@ -76,6 +76,15 @@ export function combiner(historique) {
   };
 }
 
+// Les dernières estimations sont-elles toutes présentes et concordantes (même sens, même dos,
+// profil à moins de 0,2 près) ? Alors la posture change peu : on peut l'estimer moins souvent.
+export function estimationStable(historique, taille = 3) {
+  if (historique.length < taille || historique.some((o) => !o)) return false;
+  const profils = historique.map((o) => o.profil);
+  return historique.every((o) => o.sens === historique[0].sens && o.dos === historique[0].dos)
+    && Math.max(...profils) - Math.min(...profils) < 0.2;
+}
+
 // Angle de rotation du modèle autour de la verticale (avant du modèle = +Z, positif vers la
 // droite de l'image) : de face 0, de profil ±π/2, de dos π.
 export function lacetDe({ profil, sens, dos }) {
