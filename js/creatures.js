@@ -3,9 +3,10 @@
 // correspond au point 3D (x, -y, 0). Une seule créature visible à la fois.
 import * as THREE from '../vendor/three.module.min.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
-import { ESPECES, trouverClip } from './especes.js';
+import { ESPECES } from './especes.js';
 import { lisserVers } from './geometry.js';
 import { creerLancer } from './lancer.js';
+import { creerAnimation, pose, VARIANTES_HUMEUR } from './animation.js';
 
 export const DUREE_EXPLOSION = 1.8; // s
 // Lissage de l'affichage : la boîte suivie avance par à-coups (flux optique en pixels entiers
@@ -77,7 +78,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     courante = m;
     affiche = null;
     m.pivot.visible = true;
-    m.attente?.reset().play();
+    m.demarrer();
     prochaineHumeur = t + delaiHumeur(m.espece);
     return m;
   }
@@ -117,7 +118,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   function cacher() {
     if (courante) {
       courante.pivot.visible = false;
-      courante.mixer.stopAllAction();
+      courante.arreter();
       courante = null;
       aEffacer = true;
     }
@@ -166,16 +167,13 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     mode = 'fuite';
     const regard = Math.abs(courante.pivot.rotation.y) > 0.3 ? Math.sign(courante.pivot.rotation.y) : 0;
     fuite = { sens: regard || (courante.pivot.position.x < largeur / 2 ? -1 : 1), delai: 0.2 };
-    courante.mixer.stopAllAction();
-    courante.fuite?.reset().setEffectiveTimeScale(1.3).play();
+    courante.fuir();
   }
 
   function humeur(t) {
     const m = courante;
-    if (mode !== 'suivi' || t < prochaineHumeur || !m.humeurs.length || !m.attente) return;
-    const h = m.humeurs[Math.floor(Math.random() * m.humeurs.length)];
-    h.reset().play();
-    h.crossFadeFrom(m.attente, 0.2, false);
+    if (mode !== 'suivi' || t < prochaineHumeur || !m.mimiques) return;
+    m.mimique(Math.floor(Math.random() * m.mimiques));
     prochaineHumeur = t + delaiHumeur(m.espece);
     quandHumeur(m.espece);
   }
@@ -199,7 +197,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     tPrec = t;
     lancer.maj(dt, largeur, hauteur); // avant la créature : l'impact peut la faire exploser
     if (courante) {
-      courante.mixer.update(dt);
+      courante.maj(dt);
       humeur(t);
       if (mode === 'fuite') avancerFuite(dt);
     }
@@ -224,39 +222,16 @@ function delaiHumeur(espece) {
   return (espece.ton === 'kawaii' ? 2500 : 3500) + Math.random() * 2500;
 }
 
-// Modèle normalisé : hauteur 1, origine au pied (ou au centre s'il vole), animations prêtes.
+// Modèle normalisé : hauteur 1, origine au pied (ou au centre s'il vole), animé en code
+// (js/animation.js) autour des pieds. Interface : demarrer(), mimique(i) parmi `mimiques`,
+// fuir(), maj(dt), arreter().
 export function preparer(gltf, espece) {
   const modele = gltf.scene;
-  const mixer = new THREE.AnimationMixer(modele);
-  const noms = gltf.animations.map((c) => c.name);
-  const action = (nom) => {
-    const n = trouverClip(noms, nom);
-    return n ? mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, n)) : null;
-  };
-  const attente = action(espece.clips.attente);
-  const humeurs = espece.clips.humeurs.map(action).filter(Boolean);
-  for (const h of humeurs) {
-    h.setLoop(THREE.LoopOnce, 1);
-    h.clampWhenFinished = true; // garde la dernière pose pendant le fondu de retour
-  }
-  mixer.addEventListener('finished', (e) => {
-    if (!humeurs.includes(e.action) || !attente) return;
-    attente.reset().play();
-    attente.crossFadeFrom(e.action, 0.25, false);
-  });
-
-  // Pose d'attente pour mesurer la créature.
-  attente?.play();
-  mixer.update(0);
-  modele.updateMatrixWorld(true);
   modele.traverse((o) => {
-    if (o.isMesh) o.frustumCulled = false; // les animations sortent des boîtes de repos
+    if (o.isMesh) o.frustumCulled = false;
   });
-  if (espece.teintes) teindre(modele, espece.teintes);
-  if (espece.corne) licorne(modele);
-  if (espece.ton === 'mechant') yeuxRouges(modele, espece.yeux ?? { materiau: 'Eye_White' });
-  mixer.stopAllAction();
-
+  // Aliment trop plat : on l'épaissit (hauteur et profondeur) avant de le mesurer.
+  if (espece.epaisseur) modele.scale.set(1, espece.epaisseur, espece.epaisseur);
   const bb = new THREE.Box3().setFromObject(modele);
   const taille = bb.getSize(new THREE.Vector3());
   modele.position.sub(new THREE.Vector3(
@@ -267,121 +242,35 @@ export function preparer(gltf, espece) {
   const norme = new THREE.Group();
   norme.add(modele);
   norme.scale.setScalar(1 / taille.y);
+  const corps = new THREE.Group(); // reçoit les poses de l'animation
+  corps.add(norme);
   const pivot = new THREE.Group();
-  pivot.add(norme);
+  pivot.add(corps);
   pivot.visible = false;
 
+  const ratioFace = taille.x / taille.y; // largeur vue de face, en hauteurs
+  const ratioProfil = taille.z / taille.y; // largeur vue de profil
+  // Un aliment plat et large (croissant) saute en proportion de sa largeur, pas de sa hauteur.
+  const amplitude = Math.min(3, Math.max(1, ratioFace, ratioProfil));
+  const animation = creerAnimation();
+  const poser = (p) => {
+    corps.position.y = p.dy * amplitude;
+    corps.scale.set(p.sx, p.sy, p.sx);
+    corps.rotation.set(p.tangage, 0, p.roulis);
+  };
+  const attente = () => {
+    animation.attente();
+    poser(pose('attente', 0));
+  };
   return {
-    espece, pivot, mixer, attente, humeurs, fuite: action(espece.clips.fuite),
-    ratioFace: taille.x / taille.y, // largeur vue de face, en hauteurs
-    ratioProfil: taille.z / taille.y, // largeur vue de profil
+    espece, pivot, ratioFace, ratioProfil,
+    demarrer: attente,
+    arreter: attente,
+    mimiques: VARIANTES_HUMEUR,
+    mimique: (i) => animation.humeur(i),
+    fuir: () => animation.fuite(),
+    maj: (dt) => poser(animation.maj(dt)),
   };
-}
-
-// Nouvelles couleurs, par nom de matériau.
-function teindre(modele, teintes) {
-  modele.traverse((o) => {
-    if (!o.isMesh) return;
-    for (const m of [].concat(o.material)) if (teintes[m.name]) m.color.set(teintes[m.name]);
-  });
-}
-
-// Cheval (déjà teint en pastel) → licorne : crinière arc-en-ciel, corne dorée sur le front.
-function licorne(modele) {
-  modele.traverse((o) => {
-    if (o.isMesh) arcEnCiel(o);
-  });
-
-  // GLTFLoader retire les points des noms de nœuds (« Ear1.L » devient « Ear1L »).
-  const os = (nom) => modele.getObjectByName(THREE.PropertyBinding.sanitizeNodeName(nom));
-  const tete = os('Head');
-  if (!tete) return;
-  const bb = new THREE.Box3().setFromObject(modele);
-  const H = bb.max.y - bb.min.y;
-  const position = (nom) => os(nom)?.getWorldPosition(new THREE.Vector3());
-  const pTete = position('Head');
-  const oreilles = [position('Ear1.L'), position('Ear1.R')];
-  const front = oreilles.every(Boolean) ? oreilles[0].add(oreilles[1]).multiplyScalar(0.5) : pTete.clone();
-  const cou = position('Neck3');
-  const avant = cou ? pTete.clone().sub(cou) : new THREE.Vector3(0, 0, 1);
-  avant.y = 0;
-  avant.normalize();
-  const axe = new THREE.Vector3(0, 1, 0).addScaledVector(avant, 0.8).normalize();
-
-  const longueur = H * 0.16;
-  const geo = new THREE.ConeGeometry(H * 0.025, longueur, 10, 4);
-  geo.translate(0, longueur / 2, 0);
-  const corne = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    color: '#ffd84a', emissive: '#ffb000', emissiveIntensity: 0.35, roughness: 0.35, metalness: 0.3,
-  }));
-  corne.name = 'Corne';
-  corne.position.copy(front).addScaledVector(avant, H * 0.04);
-  corne.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), axe);
-  tete.attach(corne); // suit la tête dans les animations
-}
-
-// Couleurs arc-en-ciel le long de la crinière et de la queue (matériau « Hair »).
-function arcEnCiel(mesh) {
-  const mats = [].concat(mesh.material);
-  const i = mats.findIndex((m) => m.name === 'Hair');
-  if (i < 0) return;
-  const g = mesh.geometry;
-  const pos = g.attributes.position;
-  const total = g.index ? g.index.count : pos.count;
-  const groupes = g.groups.length ? g.groups : [{ start: 0, count: total, materialIndex: 0 }];
-  const cheveux = new Set();
-  for (const gr of groupes) {
-    if (gr.materialIndex !== i) continue;
-    for (let k = gr.start; k < Math.min(gr.start + gr.count, total); k++) cheveux.add(g.index ? g.index.getX(k) : k);
-  }
-  // Axe le plus long des cheveux, en coordonnées de la géométrie.
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  for (const v of cheveux) {
-    for (let a = 0; a < 3; a++) {
-      const c = pos.getComponent(v, a);
-      min[a] = Math.min(min[a], c);
-      max[a] = Math.max(max[a], c);
-    }
-  }
-  const etendues = max.map((m, a) => m - min[a]);
-  const axe = etendues.indexOf(Math.max(...etendues));
-  const couleurs = new Float32Array(pos.count * 3).fill(1);
-  const c = new THREE.Color();
-  for (const v of cheveux) {
-    const f = (pos.getComponent(v, axe) - min[axe]) / (etendues[axe] || 1);
-    c.setHSL(f * 0.8, 0.9, 0.72, THREE.SRGBColorSpace);
-    couleurs.set([c.r, c.g, c.b], v * 3);
-  }
-  g.setAttribute('color', new THREE.BufferAttribute(couleurs, 3));
-  const cheveuxMat = mats[i].clone();
-  cheveuxMat.vertexColors = true;
-  cheveuxMat.color.set('#ffffff');
-  if (Array.isArray(mesh.material)) mesh.material[i] = cheveuxMat;
-  else mesh.material = cheveuxMat;
-}
-
-// Méchants : yeux rouges incandescents.
-// yeux : { materiau } (matériau des yeux) ou { objet } (morceau du nom de l'objet des yeux, dont
-// le matériau, partagé avec tout le corps, est alors dupliqué).
-function yeuxRouges(modele, { materiau, objet }) {
-  const allumer = (m) => {
-    m.color.set('#330000');
-    m.map = null; // pas de texture : rouge uni
-    m.emissive?.set('#ff2a00');
-    m.emissiveIntensity = 2;
-  };
-  modele.traverse((o) => {
-    if (!o.isMesh) return;
-    if (objet) {
-      if (!o.name.includes(objet)) return;
-      o.material = [].concat(o.material).map((m) => m.clone());
-      if (o.material.length === 1) [o.material] = o.material;
-      [].concat(o.material).forEach(allumer);
-      return;
-    }
-    for (const m of [].concat(o.material)) if (m.name === materiau) allumer(m);
-  });
 }
 
 // Explosion : la créature éclate en morceaux de ses propres triangles (dans la pose du moment),

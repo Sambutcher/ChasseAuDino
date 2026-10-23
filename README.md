@@ -5,27 +5,24 @@ les change en **créatures 3D**. Une seule tomate à lancer : touchée, la créa
 
 | Animal | Créature | Ton |
 |---|---|---|
-| vache | dinosaure | kawaii |
+| vache | dragon | kawaii |
 | cheval | licorne | kawaii |
-| chat | lapin | kawaii |
-| chien | loup | méchant |
-| mouton | dragon | méchant |
+| chat | chaton | kawaii |
+| chien | chiot | kawaii |
+| mouton | panda | kawaii |
 
-Les **voitures** deviennent un héros ou un squelette selon leur couleur, comme un « type » :
+Les **voitures** deviennent un aliment selon leur couleur :
 
-| Couleur | Personnage | Ton |
-|---|---|---|
-| grise / argent | chevalier | kawaii |
-| bleue, violette | mage | kawaii |
-| verte | voleur encapuchonné | kawaii |
-| orange, marron | voleur | kawaii |
-| jaune | barbare | kawaii |
-| rouge | squelette mage | méchant |
-| blanche | squelette guerrier | méchant |
-| noire | squelette voleur | méchant |
+| Couleur | Aliment |
+|---|---|
+| rouge | burger |
+| jaune, orange | croissant |
+| verte, bleue, violette | sushi |
+| grise, blanche | barquette de frites |
+| noire | éclair |
 
-Les créatures kawaii sautillent, font coucou et explosent en étoiles colorées ; les méchantes
-grognent, ont les yeux rouges et explosent en flammes et fumée.
+Les créatures sautillent, font coucou (animations en code, `js/animation.js`) et explosent en
+étoiles colorées.
 
 PWA installable, jouable **hors ligne**, pensée d'abord pour iPhone (iPhone SE 3ᵉ gén.).
 Inspirée de [Street Biathlon](https://github.com/Sambutcher/StreetBiathlon), dont elle reprend le socle.
@@ -74,7 +71,7 @@ contexte WebGL, le jeu affiche « Mémoire saturée, redémarrage… » et se re
 | `js/main.js` | démarrage, boucle d'affichage, lancer et impact |
 | `js/especes.js` | bestiaire : cible COCO → créature, couleur → personnage (pur, testé) |
 | `js/couleur.js` | couleur d'une voiture d'après sa carrosserie (pur, testé) |
-| `js/creatures.js` | créatures three.js : placement, mimiques, licorne, explosion, fuite, test de touche |
+| `js/creatures.js` | créatures three.js : placement, mimiques, explosion, fuite, test de touche |
 | `js/lancer.js` | main et tomate three.js : lancer en cloche vers le viseur, impact |
 | `js/sons.js` | bruitages Web Audio synthétisés |
 | `js/camera.js` | caméra arrière, relance de la lecture au retour sur la page |
@@ -98,8 +95,10 @@ version à leur prochaine ouverture.
 - Détection : `models/yolo11n/`, YOLO11n (COCO) converti en TensorFlow.js, entrée 224×384,
   repris de Street Biathlon. Classes utilisées : voiture 2, chat 15, chien 16, cheval 17,
   mouton 18, vache 19.
-- Créatures : `models/creatures/*.glb`, low-poly animés. Les personnages KayKit sont allégés
-  (7 animations, un équipement) par `python3 tools/alleger_kaykit.py <dossier des .glb KayKit>`.
+- Créatures : `models/creatures/*.glb`, low-poly statiques (sans squelette). Animaux : maillages
+  allégés (maillage simplifié, texture 512 px) par `tools/alleger_modeles.py` ; aliments : convertis
+  en .glb (textures 256 px) par `tools/convertir_nourriture.py`. Les sources sont dans
+  `Téléchargements/` (ignoré par git).
   Les icônes se régénèrent avec `python3 tools/icons.py` (Pillow).
 
 ## Licences et crédits
@@ -109,12 +108,7 @@ version à leur prochaine ouverture.
 - TensorFlow.js 4.22.0 (`vendor/tf.min.js`), Apache-2.0.
 - three.js 0.170.0 (`vendor/three.module.min.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`), MIT
   (`vendor/three-LICENSE.txt`).
-- Créatures par [Quaternius](https://quaternius.com), domaine public (CC0), via
-  [Poly Pizza](https://poly.pizza) : Dino, Bunny, Dragon Evolved
-  ([Ultimate Monsters](https://quaternius.com/packs/ultimatemonsters.html)) et White Horse
-  (base de la licorne), Wolf (le loup). Merci !
-- Héros et squelettes par [Kay Lousberg](https://www.kaylousberg.com) (KayKit Adventurers et
-  Skeletons Character Packs), domaine public (CC0). Merci !
+- Créatures et aliments 3D : sources et licences à compléter.
 
 ## Idées pour plus tard
 

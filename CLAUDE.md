@@ -14,12 +14,14 @@
   la mémoire de l'iPhone SE en WebGL comme en WebAssembly. Espèces désignées par une clé
   (`'vache'`, `'mage'`…).
 - Animaux COCO détectés par le YOLO11n existant (aucun réentraînement), remplacés par une créature 3D
-  (table `ESPECES` de `js/especes.js`) : chat→lapin, vache→dinosaure, cheval→licorne (kawaii) ;
-  chien→loup, mouton→dragon (méchants, yeux rougeoyants : `yeux` dans ESPECES). Modèles
-  Quaternius CC0 dans `models/creatures/`. La licorne est le cheval recoloré, avec corne ajoutée
-  en code (`licorne()` de `js/creatures.js`).
-- Voitures (COCO 2) → héros / squelettes KayKit (CC0) selon la couleur de la carrosserie
-  (`js/couleur.js`, `PERSONNAGES_VOITURE`) ; modèles allégés par `tools/alleger_kaykit.py`.
+  kawaii (table `ESPECES` de `js/especes.js`) : chat→chaton, chien→chiot, cheval→licorne,
+  mouton→panda, vache→dragon. Maillages statiques (sans squelette) allégés à ~8–20 k triangles et
+  texture 512 px par `tools/alleger_modeles.py` (venv hors dépôt : numpy, meshoptimizer, pillow ;
+  sources dans `Téléchargements/`, ignoré par git), animés **en code** par `js/animation.js`
+  (respiration, saut/tortillement, fuite en sautillant). Avant du modèle = +Z.
+- Voitures (COCO 2) → aliments (burger, croissant, éclair, frites, sushi) selon la couleur de la
+  carrosserie (`js/couleur.js`, `ALIMENTS_VOITURE`) ; .glb convertis par
+  `tools/convertir_nourriture.py` (textures du burger : viande et fromage en couleur de secours).
 - 3D : three.js 0.170.0 copié dans `vendor/` (imports réécrits en relatif, pas d'import map).
   Trois canvas superposés : `#jeu` (vidéo 2D), `#creatures` (WebGL), `#hud` (interface 2D, reçoit les taps).
 - **Mémoire graphique de l'iPhone SE à la limite** (TF.js + three.js) : TF.js libère ses textures

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ESPECES, CLASSES, PERSONNAGES_VOITURE, especeDe, estVoiture, trouverClip, filtrerEspece, messageIssue,
+  ESPECES, CLASSES, ALIMENTS_VOITURE, especeDe, estVoiture, filtrerEspece, messageIssue,
 } from '../js/especes.js';
 import { decoder } from '../js/detector.js';
 
@@ -10,49 +10,37 @@ import { decoder } from '../js/detector.js';
 function clipsDu(fichier) {
   const b = readFileSync(new URL(`../${fichier}`, import.meta.url));
   const n = b.readUInt32LE(12);
-  return JSON.parse(b.subarray(20, 20 + n).toString('utf8')).animations.map((a) => a.name);
+  return JSON.parse(b.subarray(20, 20 + n).toString('utf8')).animations?.map((a) => a.name) ?? [];
 }
 
 test('cibles : voiture et les 5 animaux COCO', () => {
   assert.deepEqual(CLASSES, [2, 15, 16, 17, 18, 19]);
   const animaux = ['chat', 'chien', 'cheval', 'mouton', 'vache'];
-  assert.deepEqual(animaux.map((a) => ESPECES[a].nom), ['lapin', 'loup', 'licorne', 'dragon', 'dinosaure']);
-  assert.deepEqual(animaux.map((a) => ESPECES[a].ton), ['kawaii', 'mechant', 'kawaii', 'mechant', 'kawaii']);
+  assert.deepEqual(animaux.map((a) => ESPECES[a].nom), ['chaton', 'chiot', 'licorne', 'panda', 'dragon']);
+  assert.deepEqual(animaux.map((a) => ESPECES[a].ton), ['kawaii', 'kawaii', 'kawaii', 'kawaii', 'kawaii']);
 });
 
 test('especeDe : animal par sa classe, voiture par sa couleur', () => {
   assert.equal(especeDe(19), 'vache');
   assert.equal(especeDe(15), 'chat');
-  assert.equal(especeDe(2, 'bleu'), 'mage');
-  assert.equal(especeDe(2, 'rouge'), 'squelette-mage');
-  assert.equal(especeDe(2, null), 'chevalier', 'couleur inconnue : gris');
+  assert.equal(especeDe(2, 'bleu'), 'sushi');
+  assert.equal(especeDe(2, 'rouge'), 'burger');
+  assert.equal(especeDe(2, null), 'frites', 'couleur inconnue : gris');
   assert.equal(especeDe(0), null);
   assert.ok(estVoiture(2) && !estVoiture(16));
 });
 
-test('chaque couleur de voiture mène à un personnage existant, héros kawaii ou squelette méchant', () => {
-  for (const [couleur, cle] of Object.entries(PERSONNAGES_VOITURE)) {
-    const e = ESPECES[cle];
-    assert.ok(e, `${couleur} → ${cle} absent`);
-    assert.equal(e.classe, 2);
-    assert.equal(e.ton, cle.startsWith('squelette') ? 'mechant' : 'kawaii');
+test('chaque couleur de voiture mène à un aliment existant ; chaque aliment a sa couleur', () => {
+  for (const [couleur, cle] of Object.entries(ALIMENTS_VOITURE)) {
+    assert.ok(ESPECES[cle], `${couleur} → ${cle} absent`);
+    assert.equal(ESPECES[cle].classe, 2);
   }
+  const aliments = Object.keys(ESPECES).filter((c) => ESPECES[c].classe === 2);
+  assert.deepEqual([...new Set(Object.values(ALIMENTS_VOITURE))].sort(), aliments.sort());
 });
 
-test('chaque créature a ses animations dans son modèle', () => {
-  for (const e of Object.values(ESPECES)) {
-    const noms = clipsDu(e.fichier);
-    for (const clip of [e.clips.attente, e.clips.fuite, ...e.clips.humeurs]) {
-      assert.ok(trouverClip(noms, clip), `${e.nom} : animation ${clip} absente`);
-    }
-  }
-});
-
-test('trouverClip : nom exact puis suffixe après « | »', () => {
-  const noms = ['CharacterArmature|Idle', 'Gallop_Jump', 'AnimalArmature|Gallop', 'Gallop'];
-  assert.equal(trouverClip(noms, 'Idle'), 'CharacterArmature|Idle');
-  assert.equal(trouverClip(noms, 'Gallop'), 'Gallop');
-  assert.equal(trouverClip(noms, 'Jump'), null);
+test('les modèles sont statiques : aucune animation dans les .glb', () => {
+  for (const e of Object.values(ESPECES)) assert.deepEqual(clipsDu(e.fichier), [], `${e.nom} : animée en code`);
 });
 
 test('filtrerEspece : toutes les boîtes, ou celles de la classe verrouillée', () => {
@@ -63,8 +51,9 @@ test('filtrerEspece : toutes les boîtes, ou celles de la classe verrouillée', 
 
 test('messageIssue accorde le genre', () => {
   assert.equal(messageIssue(ESPECES.cheval, 'enfuie'), 'La licorne s\'est enfuie !');
-  assert.equal(messageIssue(ESPECES.mouton, 'enfuie'), 'Le dragon s\'est enfui !');
-  assert.equal(messageIssue(ESPECES.barbare, 'explosee'), 'Le barbare a explosé !');
+  assert.equal(messageIssue(ESPECES.mouton, 'enfuie'), 'Le panda s\'est enfui !');
+  assert.equal(messageIssue(ESPECES.burger, 'explosee'), 'Le burger a explosé !');
+  assert.equal(messageIssue(ESPECES.frites, 'enfuie'), 'La barquette de frites s\'est enfuie !');
 });
 
 test('decoder : meilleure classe recherchée par ancre, seuil et NMS', () => {
