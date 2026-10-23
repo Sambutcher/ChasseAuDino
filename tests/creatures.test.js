@@ -17,13 +17,12 @@ async function charger(espece) {
 }
 
 for (const espece of Object.values(ESPECES)) {
-  test(`${espece.nom} : hauteur 1, posé ou centré, animations prêtes`, async () => {
+  test(`${espece.nom} : hauteur 1, posé, animation prête`, async () => {
     const m = await charger(espece);
     m.pivot.updateMatrixWorld(true);
     const bb = new THREE.Box3().setFromObject(m.pivot);
     assert.ok(Math.abs(bb.max.y - bb.min.y - 1) < 0.01, `hauteur ${bb.max.y - bb.min.y}`);
-    if (espece.vol) assert.ok(Math.abs(bb.min.y + bb.max.y) < 0.01, 'centré verticalement');
-    else assert.ok(Math.abs(bb.min.y) < 0.01, 'pieds à y = 0');
+    assert.ok(Math.abs(bb.min.y) < 0.01, 'pieds à y = 0');
     assert.ok(Math.abs(bb.min.x + bb.max.x) < 0.01, 'centré horizontalement');
     assert.ok(m.ratioFace > 0.2 && m.ratioFace < 6, `largeur de face ${m.ratioFace}`);
     assert.ok(m.ratioProfil > 0.3 && m.ratioProfil < 3, `largeur de profil ${m.ratioProfil}`);

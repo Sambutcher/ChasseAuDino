@@ -90,14 +90,13 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     const m = choisir(cle, t);
     if (!m) return;
     mode = 'suivi';
-    const { vol } = m.espece;
     const x = boite.x + boite.w / 2;
-    const y = vol ? boite.y + boite.h / 2 : boite.y + boite.h;
+    const y = boite.y + boite.h;
     const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - x) / (largeur / 2)));
     const l = 0.6 * versCentre;
     // Largeur de la créature (en hauteurs) sous cet angle, pour borner sa taille à la boîte.
     const ratio = m.ratioFace * Math.abs(Math.cos(l)) + m.ratioProfil * Math.abs(Math.sin(l));
-    const s = Math.max(40, Math.min(boite.h * (vol ? 0.95 : 1.05), (boite.w * 1.6) / ratio));
+    const s = Math.max(40, Math.min(boite.h * 1.05, (boite.w * 1.6) / ratio));
     if (!affiche || Math.hypot(x - affiche.x, y - affiche.y) > affiche.s * SAUT) {
       affiche = { x, y, s, lacet: l, t };
     } else {
@@ -186,7 +185,6 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     if (fuite.delai > 0) return;
     const v = largeur * VITESSE_FUITE * dt;
     p.position.x += fuite.sens * v;
-    if (courante.espece.vol) p.position.y += v * 0.6;
     const s = p.scale.x;
     if (p.position.x < -s || p.position.x > largeur + s || -p.position.y < -s) p.visible = false;
   }
@@ -222,7 +220,7 @@ function delaiHumeur(espece) {
   return (espece.ton === 'kawaii' ? 2500 : 3500) + Math.random() * 2500;
 }
 
-// Modèle normalisé : hauteur 1, origine au pied (ou au centre s'il vole), animé en code
+// Modèle normalisé : hauteur 1, origine au pied, animé en code
 // (js/animation.js) autour des pieds. Interface : demarrer(), mimique(i) parmi `mimiques`,
 // fuir(), maj(dt), arreter().
 export function preparer(gltf, espece) {
@@ -236,7 +234,7 @@ export function preparer(gltf, espece) {
   const taille = bb.getSize(new THREE.Vector3());
   modele.position.sub(new THREE.Vector3(
     (bb.min.x + bb.max.x) / 2,
-    espece.vol ? (bb.min.y + bb.max.y) / 2 : bb.min.y,
+    bb.min.y,
     (bb.min.z + bb.max.z) / 2,
   ));
   const norme = new THREE.Group();
@@ -445,7 +443,7 @@ export function creerExplosion(m, textures) {
 }
 
 // Couleur d'une texture aux coordonnées (u, v), pour colorer les éclats des créatures texturées
-// (personnages KayKit). Pixels lus une fois par texture ; null hors navigateur ou sans image.
+// (modèles texturés). Pixels lus une fois par texture ; null hors navigateur ou sans image.
 const pixelsTextures = new WeakMap();
 function lecteurTexture(map) {
   const image = map?.image;

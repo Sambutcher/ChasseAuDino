@@ -7,11 +7,10 @@ const VOITURE = 2; // classe COCO « car »
 // Clé → espèce.
 // classe : classe COCO de la cible. cible : ce que la caméra voit (« vache », « voiture »).
 // ton : 'kawaii' (sautille, explose en confettis) ou 'mechant' (grogne, explose en flammes).
-// vol : la créature flotte au milieu de la boîte au lieu de poser les pieds en bas.
 // epaisseur : facteur d'épaississement (hauteur et profondeur) d'un modèle trop plat.
 // Les modèles sont statiques : js/animation.js les anime en code.
 const creature = (classe, cible, nom, fichier, extra = {}) => ({
-  classe, cible, nom, fichier: `models/creatures/${fichier}.glb`, ton: 'kawaii', vol: false, ...extra,
+  classe, cible, nom, fichier: `models/creatures/${fichier}.glb`, ton: 'kawaii', ...extra,
 });
 const aliment = (nom, fichier, extra = {}) => creature(VOITURE, 'voiture', nom, fichier, extra);
 
