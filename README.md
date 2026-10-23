@@ -84,7 +84,7 @@ contexte WebGL, le jeu affiche « Mémoire saturée, redémarrage… » et se re
 
 **À chaque mise en ligne, changer `VERSION` dans `sw.js` et `index.html`** (`node --test tests/`
 le vérifie, ainsi que la présence de chaque fichier dans le cache hors ligne), puis pousser sur
-`v1-stable-sans-posture` : GitHub Pages republie aussitôt, et les téléphones passent à la nouvelle
+`main` : GitHub Pages republie aussitôt, et les téléphones passent à la nouvelle
 version à leur prochaine ouverture.
 
 ## Modèles

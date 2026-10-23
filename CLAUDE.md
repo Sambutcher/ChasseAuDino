@@ -9,7 +9,7 @@
   three.js simples dans la scène des créatures) la lance en cloche vers le viseur ; à l'impact, la
   créature touchée explose, ratée elle s'enfuit → course… Dans le code, `cartouches` compte les tomates. Bouton « Skip » sur
   l'écran de course : tir sans courir. Pas de mode debug ni de simulation GPS.
-- Branches : `v1-stable-sans-posture` (par défaut, en ligne ; depuis 1.4.0 elle a la posture, nom conservé) ;
+- Branches : `main` (par défaut, en ligne : Pages la publie ; depuis 1.6.0) ; `v1-stable-sans-posture` = ancienne branche en ligne (jusqu'à 1.5.0), conservée ;
   `avec-posture` = essais de posture RTMPose (orientation des créatures), abandonnés : saturait
   la mémoire de l'iPhone SE en WebGL comme en WebAssembly. Espèces désignées par une clé
   (`'vache'`, `'mage'`…).
@@ -55,7 +55,7 @@
   vérifié à chaque ouverture et la page se recharge quand une nouvelle version prend la main.
 - Dev sur iPhone : `python3 tools/serve.py` (HTTPS auto-signé, IP locale 192.168.1.147:8443) ;
   tester sur Pages en **navigation privée** pour éviter le cache hors ligne.
-- Mise en ligne : GitHub Pages sur la branche `v1-stable-sans-posture`
+- Mise en ligne : GitHub Pages sur la branche `main`
   (https://sambutcher.github.io/ChasseAuxBebetes/), publication automatique à chaque push.
   L'ancienne adresse …/ChasseAuDino/ ne redirige pas (dépôt renommé le 2026-10-23).
 - Ne pas tester les pages dans Chromium : Samuel teste lui-même (navigateur, iPhone).
