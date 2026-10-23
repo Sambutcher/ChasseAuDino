@@ -117,7 +117,8 @@ export function creerSons() {
   return {
     debloquer,
 
-    // Cri de l'animal d'espèce `cle` ; rien pour un aliment ni si le dernier cri est trop récent.
+    // Cri de l'animal d'espèce `cle` à son apparition ; rien pour un aliment, ni si le dernier cri
+    // est trop récent (une détection qui clignote le ferait répéter).
     cri(cle, t = performance.now()) {
       if (!pret() || !CRIS[cle] || t - dernierCri < DELAI_CRI_MS) return;
       dernierCri = t;
@@ -147,9 +148,13 @@ export function creerSons() {
       }
     },
 
-    fuite(ton) {
+    // Fuite : l'animal pousse son cri (toujours, sans délai) ; un aliment fait son bruit de fuite.
+    fuite(ton, cle) {
       if (!pret()) return;
-      if (ton === 'kawaii') {
+      if (CRIS[cle]) {
+        dernierCri = performance.now();
+        CRIS[cle]();
+      } else if (ton === 'kawaii') {
         note('sine', 600, 1300, 0, 0.18, 0.25);
         note('sine', 700, 1500, 0.2, 0.18, 0.25);
       } else {

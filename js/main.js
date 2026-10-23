@@ -87,7 +87,7 @@ boutonDemarrer.addEventListener('click', async () => {
     // Sans le modèle de cap, les aliments regardent simplement vers le centre de l'écran.
     const cap = await chargerCap(URL_CAP).catch((e) => { console.warn('Cap indisponible :', e); return null; });
     statut.textContent = 'Réveil des créatures…';
-    const creatures = await creerCreatures(canvasCreatures, { quandCri: (cle) => sons.cri(cle) });
+    const creatures = await creerCreatures(canvasCreatures, { quandApparait: (cle) => sons.cri(cle) });
     accueil.hidden = true;
     lancerPartie(entree, creatures, pose, cap);
   } catch (e) {
@@ -228,7 +228,7 @@ function lancerPartie(entree, creatures, pose, cap) {
       sons.explosion(ton);
     } else {
       creatures.fuir();
-      sons.fuite(ton);
+      sons.fuite(ton, etat.espece);
     }
     dernierTir = { resultat: r.resultat, t: performance.now() };
     finSerieA = performance.now();

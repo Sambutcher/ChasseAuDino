@@ -26,8 +26,8 @@ const PALETTES = {
 };
 
 // options.base : préfixe des chemins des modèles (page hors racine) ;
-// options.quandCri(cle) : la créature d'espèce `cle` apparaît ou fait une mimique (pour son cri).
-export async function creerCreatures(canvas, { base = '', quandCri = () => {} } = {}) {
+// options.quandApparait(cle) : la créature d'espèce `cle` apparaît (pour son cri).
+export async function creerCreatures(canvas, { base = '', quandApparait = () => {} } = {}) {
   // Sans anticrénelage et densité plafonnée : la mémoire graphique de l'iPhone SE est à la limite.
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
   renderer.setClearColor(0x000000, 0);
@@ -64,7 +64,6 @@ export async function creerCreatures(canvas, { base = '', quandCri = () => {} } 
   const lancer = creerLancer(scene); // main et tomate
 
   let courante = null; // modèle affiché
-  let cleCourante = null; // son espèce
   let mode = 'cache'; // 'suivi' | 'fuite' | 'explosion' | 'cache'
   let prochaineHumeur = 0;
   let tPrec = null;
@@ -82,8 +81,7 @@ export async function creerCreatures(canvas, { base = '', quandCri = () => {} } 
     m.pivot.visible = true;
     m.demarrer();
     prochaineHumeur = t + delaiHumeur(m.espece);
-    cleCourante = cle;
-    quandCri(cle);
+    quandApparait(cle);
     return m;
   }
 
@@ -176,7 +174,6 @@ export async function creerCreatures(canvas, { base = '', quandCri = () => {} } 
     if (mode !== 'suivi' || t < prochaineHumeur || !m.mimiques) return;
     m.mimique(Math.floor(Math.random() * m.mimiques));
     prochaineHumeur = t + delaiHumeur(m.espece);
-    quandCri(cleCourante);
   }
 
   function avancerFuite(dt) {

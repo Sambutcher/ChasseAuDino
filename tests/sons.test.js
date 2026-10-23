@@ -59,3 +59,16 @@ test('cris : rien tant que l\'audio n\'est pas débloqué', () => {
   sons.cri('vache', 99999);
   assert.equal(compte.oscillateurs, 0);
 });
+
+test('fuite : l\'animal crie malgré le délai, l\'aliment fait son bruit de fuite', () => {
+  const compte = fauxAudio();
+  const sons = creerSons();
+  sons.debloquer();
+  sons.cri('chat', performance.now()); // apparition
+  const apres = compte.oscillateurs;
+  sons.fuite('kawaii', 'chat');
+  assert.ok(compte.oscillateurs > apres, 'cri à la fuite');
+  const avant = compte.oscillateurs;
+  sons.fuite('kawaii', 'burger');
+  assert.ok(compte.oscillateurs > avant, 'bruit de fuite d\'un aliment');
+});

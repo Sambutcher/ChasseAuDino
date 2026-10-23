@@ -20,7 +20,7 @@
   `Téléchargements/`, ignoré par git, ou Google Drive du pack). Clips joués par `js/clips.js` (AnimationMixer, fondus) :
   `Idle` en attente, mimiques `Idle_2`/`Gallop_Jump`/`Idle_HitReact1`, `Gallop` en fuite, `Idle_Headlow`/`Eating` quand la
   tête est baissée ; oreilles et queue frémissent en plus. Pas de clip assis/couché dans le pack. Avant du modèle = +Z.
-  Cris synthétisés (Web Audio, `CRIS` de `js/sons.js`) à l'apparition et à chaque mimique, 6 s minimum entre deux ; aucun son pour les aliments.
+  Cris synthétisés (Web Audio, `CRIS` de `js/sons.js`) à l'apparition (6 s minimum entre deux) et à la fuite ; aucun cri pour les aliments.
   Les aliments (statiques) restent animés en code par `js/animation.js`. Les boîtes englobantes des `SkinnedMesh` sont en
   cache : `viderBoites` (creatures.js) avant toute mesure ou tir.
 - **Posture des animaux (1.4.0)** : `yolo11n-pose` entraîné sur Animal Pose (Kaggle,
