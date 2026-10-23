@@ -99,14 +99,17 @@ export function creerLancer(scene) {
   let vol = null; // { depart, arrivee, fleche, s0, s1, impact, touche }
   let quandImpact = null;
   let hauteurEcran = 0;
+  let horloge = 0; // s, pour le balancement au repos
 
-  // Main au repos, posée en bas à droite, paume tournée vers le haut, inclinée vers le centre.
-  function poser(largeur, hauteur) {
+  // Main au repos, posée en bas à droite, paume tournée vers le haut, inclinée vers le centre,
+  // avec un léger balancement (elle soupèse la tomate) ; a : secondes écoulées.
+  function poser(largeur, hauteur, a) {
     const h = Math.min(largeur, hauteur) * 0.3;
     support.position.set(largeur * 0.74, -(hauteur - h * 0.8), Z_MAIN);
     support.scale.setScalar(h);
-    main.position.set(0, 0, 0);
-    main.rotation.set(-0.6, -0.25, 0.35);
+    const b = Math.sin(a * 2 * Math.PI / 1.6);
+    main.position.set(0.02 * Math.sin(a * 2 * Math.PI / 2.3), 0.05 * b, 0);
+    main.rotation.set(-0.6 - 0.06 * b, -0.25, 0.35 + 0.04 * Math.sin(a * 2 * Math.PI / 2.9));
   }
 
   // La tomate est disponible : la main l'attend (sans effet pendant un lancer).
@@ -143,7 +146,8 @@ export function creerLancer(scene) {
 
   function maj(dt, largeur, hauteur) {
     hauteurEcran = hauteur;
-    poser(largeur, hauteur);
+    horloge += dt;
+    poser(largeur, hauteur, horloge);
     if (t === null) return;
     t += dt;
     // La main : élan vers le bas en se cambrant, puis remontée en fouettant du poignet.
