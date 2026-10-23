@@ -110,11 +110,11 @@ version à leur prochaine ouverture.
 - Animaux 3D : pack « Ultimate Animated Animals » de [Quaternius](https://quaternius.com/packs/ultimateanimatedanimals.html),
   CC0 (domaine public). Couleurs pastel et allègement des clips par `tools/preparer_animaux.py`.
 - Cris des animaux (`sons/`, extraits et convertis en WAV) : Wikimedia Commons.
-  Shiba : [Barking of a dog](https://commons.wikimedia.org/wiki/File:Barking_of_a_dog.ogg) (Amada44, CC BY-SA 3.0) ;
-  renard : [Vulpes vulpes, Henclová](https://commons.wikimedia.org/wiki/File:Vulpes_vulpes,_at_Henclov%C3%A1,_Slovakia_XC108315.mp3) (Alexander Kurthy, CC BY-SA 4.0, xeno-canto) ;
-  cheval : [Wiehern](https://commons.wikimedia.org/wiki/File:Wiehern.ogg) (Hü., domaine public) ;
-  alpaga : [Sheep bleating](https://commons.wikimedia.org/wiki/File:Sheep_bleating.ogg) (earthcalling, domaine public) ;
-  vache : [Cow in Vezo](https://commons.wikimedia.org/wiki/File:Cow_in_Vezo.ogg) (Gasybeaugosse2020, CC0).
+  shiba : [Barking of a dog](https://commons.wikimedia.org/wiki/File:Barking_of_a_dog.ogg) (Amada44, CC BY-SA 3.0) ;
+  renard : [Meow domestic cat](https://commons.wikimedia.org/wiki/File:Meow_domestic_cat.ogg) (Smser, GFDL) ;
+  cheval : [hennissement](https://commons.wikimedia.org/wiki/File:Mares-Prefer-the-Voices-of-Highly-Fertile-Stallions-pone.0118468.s001.oga) (Lemasson et al., PLOS ONE, CC BY 4.0) ;
+  alpaga : [Lamb bleating and its mother's response](https://commons.wikimedia.org/wiki/File:Lamb_bleating_and_its_mother%27s_response.flac) (Yosef Ben Melamed, CC BY-SA 4.0) ;
+  vache : [Single Cow Moo](https://commons.wikimedia.org/wiki/File:Single_Cow_Moo.ogg) (MichaeltheFox8621, CC BY-SA 4.0).
 - Aliments 3D : sources et licences à compléter.
 
 ## Idées pour plus tard
