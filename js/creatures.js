@@ -215,7 +215,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
 
   return {
     montrer, cacher, touche, exploser, fuir, dessiner,
-    preparerTomate: lancer.preparer, lancerTomate: lancer.lancer,
+    preparerTomate: lancer.preparer, lancerTomate: lancer.lancer, cheminTomate: lancer.chemin,
     get lancerEnCours() { return lancer.enCours; },
   };
 }

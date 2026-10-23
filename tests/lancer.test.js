@@ -41,3 +41,18 @@ test('lancer : impact une seule fois au point visé, puis la main revient si une
   assert.equal(lancer.visible, false);
   assert.ok(DUREE_VOL > 0.3 && DUREE_VOL < 1);
 });
+
+test('chemin prévu : de la tomate dans la main jusqu\'au point visé, absent pendant un lancer', () => {
+  const lancer = creerLancer(new THREE.Scene());
+  lancer.preparer(true);
+  lancer.maj(0, 375, 667);
+  const vise = { x: 187.5, y: 333.5 };
+  const chemin = lancer.chemin(vise);
+  const depart = chemin(0);
+  assert.ok(depart.x > 187.5 && depart.y > 333.5, 'part d\'en bas à droite');
+  const arrivee = chemin(1);
+  assert.ok(Math.abs(arrivee.x - vise.x) < 1e-6 && Math.abs(arrivee.y - vise.y) < 1e-6);
+  assert.ok(chemin(0.5).y < Math.min(depart.y, vise.y), 'passe au-dessus (y écran plus petit)');
+  lancer.lancer(vise, () => false);
+  assert.equal(lancer.chemin(vise), null);
+});

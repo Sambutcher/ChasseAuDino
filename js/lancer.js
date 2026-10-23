@@ -22,6 +22,11 @@ export function trajectoire(u, depart, arrivee, fleche) {
   };
 }
 
+// Hauteur de la cloche : un tiers de l'écran, plus quand la cible est au-dessus du départ.
+export function fleche(depart, arrivee, hauteur) {
+  return hauteur * 0.3 + Math.max(0, arrivee.y - depart.y) * 0.3;
+}
+
 // Main droite vue de l'avant, paume vers la caméra, doigts vers le haut (hauteur de paume 1,
 // origine au centre de la paume). La tomate se loge devant la paume, entre les doigts repliés.
 export function creerMain() {
@@ -93,6 +98,7 @@ export function creerLancer(scene) {
   let t = null; // secondes depuis le début du lancer, null au repos
   let vol = null; // { depart, arrivee, fleche, s0, s1, impact, touche }
   let quandImpact = null;
+  let hauteurEcran = 0;
 
   // Main au repos, posée en bas à droite, paume tournée vers le haut, inclinée vers le centre.
   function poser(largeur, hauteur) {
@@ -120,7 +126,23 @@ export function creerLancer(scene) {
     return true;
   }
 
+  // Trajet prévu de la tomate (pour l'arc pointillé du viseur) : fonction de u (0 → 1) donnant un
+  // point écran, de la tomate dans la main jusqu'à `point`. null si la main n'attend pas.
+  function chemin(point) {
+    if (t !== null || !support.visible) return null;
+    support.updateMatrixWorld(true);
+    const p = tomate.getWorldPosition(new THREE.Vector3());
+    const depart = { x: p.x, y: p.y };
+    const arrivee = { x: point.x, y: -point.y };
+    const f = fleche(depart, arrivee, hauteurEcran);
+    return (u) => {
+      const q = trajectoire(u, depart, arrivee, f);
+      return { x: q.x, y: -q.y };
+    };
+  }
+
   function maj(dt, largeur, hauteur) {
+    hauteurEcran = hauteur;
     poser(largeur, hauteur);
     if (t === null) return;
     t += dt;
@@ -146,7 +168,7 @@ export function creerLancer(scene) {
       vol.depart = { x: tomate.position.x, y: tomate.position.y };
       vol.s0 = tomate.scale.x;
       vol.s1 = Math.max(6, Math.min(largeur, hauteur) * 0.03);
-      vol.fleche = hauteur * 0.3 + Math.max(0, vol.arrivee.y - vol.depart.y) * 0.3;
+      vol.fleche = fleche(vol.depart, vol.arrivee, hauteur);
     }
     if (vol.depart) {
       const u = (t - ELAN - BRAS) / DUREE_VOL;
@@ -172,7 +194,7 @@ export function creerLancer(scene) {
   }
 
   return {
-    preparer, lancer, maj,
+    preparer, lancer, maj, chemin,
     get visible() { return support.visible || (tomate.parent === scene && tomate.visible); },
     get enCours() { return t !== null; },
   };

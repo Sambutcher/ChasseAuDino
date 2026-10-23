@@ -44,26 +44,63 @@ export function creerRendu(canvasVideo, canvas) {
     ctx.closePath();
   }
 
-  function viseur() {
+  // Viseur de fête foraine au centre de l'écran : anneaux rouges et blancs qui « respirent », ombre
+  // du point d'impact et, si la main attend, arc pointillé du lancer prévu (chemin(u) → point
+  // écran, u de 0 à 1) dont les points avancent vers la cible. t : horloge en ms.
+  function viseur(t, chemin) {
     const cx = largeur / 2;
     const cy = hauteur / 2;
-    const r = Math.min(largeur, hauteur) * 0.12;
+    const r = Math.min(largeur, hauteur) * 0.11 * (1 + 0.07 * Math.sin((t / 1300) * 2 * Math.PI));
     ctx.save();
-    ctx.strokeStyle = '#fff';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
     ctx.shadowBlur = 3;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      ctx.moveTo(cx + dx * r * 0.3, cy + dy * r * 0.3);
-      ctx.lineTo(cx + dx * r * 1.4, cy + dy * r * 1.4);
+
+    if (chemin) {
+      const n = 22;
+      const phase = (t / 700) % 1;
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < n; i++) {
+        const u = (i + phase) / n;
+        const p = chemin(u);
+        if (Math.hypot(p.x - cx, p.y - cy) < r) continue; // pas de points dans la cible
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4.5 - 2.5 * u, 0, 2 * Math.PI);
+        ctx.fill();
+      }
     }
-    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    ctx.arc(cx, cy, 2, 0, 2 * Math.PI);
-    ctx.fillStyle = '#fff';
+    ctx.ellipse(cx, cy + r * 0.15, r * 0.55, r * 0.18, 0, 0, 2 * Math.PI);
     ctx.fill();
+
+    // Bandes translucides : on voit la créature à travers.
+    const bandes = ['rgba(232,50,43,0.22)', 'rgba(255,255,255,0.2)'];
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * (1 - i / 3), 0, 2 * Math.PI);
+      ctx.fillStyle = bandes[i % 2];
+      ctx.fill();
+    }
+    ctx.shadowBlur = 3;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * (1 - i / 3), 0, 2 * Math.PI);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.strokeStyle = '#e8322b';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(4, r * 0.12), 0, 2 * Math.PI);
+    ctx.fillStyle = '#e8322b';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
     ctx.restore();
   }
 

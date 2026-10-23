@@ -85,7 +85,7 @@ contexte WebGL, le jeu affiche « Mémoire saturée, redémarrage… » et se re
 | `js/course.js` | distance à vol d'oiseau, départ, déblocage du tir (pur, testé) |
 | `js/position.js` | GPS (`watchPosition`), écran maintenu allumé |
 | `js/geometry.js` | cadrage, letterbox, zones de détection, placement de la vidéo, lissage (pur, testé) |
-| `js/render.js` | dessin 2D : vidéo, viseur, messages, écran de course |
+| `js/render.js` | dessin 2D : vidéo, viseur forain et arc du lancer, messages, écran de course |
 | `sw.js` | cache hors ligne |
 
 **À chaque mise en ligne, changer `VERSION` dans `sw.js` et `index.html`** (`node --test tests/`

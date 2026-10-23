@@ -318,7 +318,9 @@ function lancerPartie(entree, creatures) {
     }
     creatures.dessiner(t);
     creatures.preparerTomate(etat.cartouches > 0);
-    if (visible && !etat.issue) rendu.viseur();
+    if (visible && !etat.issue) {
+      rendu.viseur(t, creatures.cheminTomate({ x: rendu.largeur / 2, y: rendu.hauteur / 2 }));
+    }
     if (etat.issue) rendu.message(messageIssue(ESPECES[etat.espece], etat.issue));
 
     const age = t - dernierTir.t;
