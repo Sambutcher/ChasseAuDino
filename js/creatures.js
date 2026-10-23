@@ -25,8 +25,9 @@ const PALETTES = {
   mechant: { flash: '#ffb347', particules: ['#ffdd55', '#ff8a00', '#ff3b00', '#b31b00'], fumee: ['#2a2a2a', '#444', '#5a5248'] },
 };
 
-// options.base : préfixe des chemins des modèles (page hors racine).
-export async function creerCreatures(canvas, { base = '' } = {}) {
+// options.base : préfixe des chemins des modèles (page hors racine) ;
+// options.quandCri(cle) : la créature d'espèce `cle` apparaît ou fait une mimique (pour son cri).
+export async function creerCreatures(canvas, { base = '', quandCri = () => {} } = {}) {
   // Sans anticrénelage et densité plafonnée : la mémoire graphique de l'iPhone SE est à la limite.
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
   renderer.setClearColor(0x000000, 0);
@@ -63,6 +64,7 @@ export async function creerCreatures(canvas, { base = '' } = {}) {
   const lancer = creerLancer(scene); // main et tomate
 
   let courante = null; // modèle affiché
+  let cleCourante = null; // son espèce
   let mode = 'cache'; // 'suivi' | 'fuite' | 'explosion' | 'cache'
   let prochaineHumeur = 0;
   let tPrec = null;
@@ -80,6 +82,8 @@ export async function creerCreatures(canvas, { base = '' } = {}) {
     m.pivot.visible = true;
     m.demarrer();
     prochaineHumeur = t + delaiHumeur(m.espece);
+    cleCourante = cle;
+    quandCri(cle);
     return m;
   }
 
@@ -172,6 +176,7 @@ export async function creerCreatures(canvas, { base = '' } = {}) {
     if (mode !== 'suivi' || t < prochaineHumeur || !m.mimiques) return;
     m.mimique(Math.floor(Math.random() * m.mimiques));
     prochaineHumeur = t + delaiHumeur(m.espece);
+    quandCri(cleCourante);
   }
 
   function avancerFuite(dt) {
