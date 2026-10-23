@@ -29,6 +29,7 @@ const FICHIERS = [
   'js/especes.js',
   'js/creatures.js',
   'js/animation.js',
+  'js/posture.js',
   'js/lancer.js',
   'js/sons.js',
   'models/yolo11n/model.json',
