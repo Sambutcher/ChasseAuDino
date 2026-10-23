@@ -25,7 +25,12 @@
   sur un carré autour de l'animal suivi toutes les 300 ms (une seule inférence à la fois avec la
   détection) ; `js/posture.js` (pur) déduit profil, sens et dos des points clés, le lacet est passé à
   `creatures.montrer`. Sans modèle ou sans estimation : créature tournée vers le centre. Pas de
-  repli par ratio de boîte. Voitures sans orientation tant que l'étape 3 n'est pas faite.
+  repli par ratio de boîte.
+- **Cap des voitures (1.5.0)** : modèle `models/cap/` copié du dépôt `Sambutcher/OrientationVoiture` (MobileNetV3-Small
+  128 px distillé d'Orient Anything, CC BY 4.0 ; 8 secteurs d'azimut, ~3 Mo). `js/cap-modele.js` l'exécute sur une découpe
+  carrée (plus grand côté × 1,2, grise hors écran, `js/cap.js` pur) de la voiture suivie toutes les 600 ms (une seule
+  inférence à la fois) ; probabilités lissées, moyenne circulaire → lacet (`lacet = −azimut`). Sans modèle : aliment tourné
+  vers le centre. La découpe doit rester identique à celle de OrientationVoiture (`MARGE`, `TAILLE_ENTREE`).
 - Voitures (COCO 2) → un aliment tiré au hasard à chaque apparition (burger, croissant, éclair,
   frites, sushi) ; .glb convertis par `tools/convertir_nourriture.py`.
 - 3D : three.js 0.170.0 copié dans `vendor/` (imports réécrits en relatif, pas d'import map).

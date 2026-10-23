@@ -7,6 +7,8 @@ import { suivrePosition, garderEcranAllume } from './position.js';
 import { creerCourse } from './course.js';
 import { chargerDetecteur, detecter } from './detector.js';
 import { chargerPose, estimerPose } from './pose.js';
+import { chargerCap, estimerCap } from './cap-modele.js';
+import { GRIS, capStable, decoupeCarree, lacetAliment, lisserProbas, rectanglesDecoupe } from './cap.js';
 import { classePose, combiner, estimationStable, lacetDe, orientation, zonePose } from './posture.js';
 import { creerRendu } from './render.js';
 import { creerCreatures } from './creatures.js';
@@ -19,8 +21,11 @@ import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, placementVi
 
 const URL_MODELE = 'models/yolo11n/model.json';
 const URL_POSE = 'models/pose/model.json';
+const URL_CAP = 'models/cap/model.json';
 // Entre deux estimations de posture de l'animal suivi : chaque inférence bloque un instant le fil
 // principal, donc rares ; plus espacées encore quand la posture est stable.
+const INTERVALLE_CAP_MS = 800; // cap des voitures
+const INTERVALLE_CAP_STABLE_MS = 2000; // quand les derniers secteurs concordent
 const INTERVALLE_POSE_MS = 500;
 const INTERVALLE_POSE_STABLE_MS = 1200;
 const ESTIMATIONS_POSE = 3; // dernières estimations moyennées
@@ -78,10 +83,13 @@ boutonDemarrer.addEventListener('click', async () => {
     statut.textContent = 'Chargement de la posture…';
     // Sans le modèle de pose, les créatures regardent simplement vers le centre de l'écran.
     const pose = await chargerPose(URL_POSE).catch((e) => { console.warn('Posture indisponible :', e); return null; });
+    statut.textContent = 'Chargement du cap des voitures…';
+    // Sans le modèle de cap, les aliments regardent simplement vers le centre de l'écran.
+    const cap = await chargerCap(URL_CAP).catch((e) => { console.warn('Cap indisponible :', e); return null; });
     statut.textContent = 'Réveil des créatures…';
     const creatures = await creerCreatures(canvasCreatures, { quandHumeur: (e) => sons.humeur(e.ton) });
     accueil.hidden = true;
-    lancerPartie(entree, creatures, pose);
+    lancerPartie(entree, creatures, pose, cap);
   } catch (e) {
     console.error(e);
     statut.textContent = `Impossible de démarrer : ${e.message || e}`;
@@ -89,7 +97,7 @@ boutonDemarrer.addEventListener('click', async () => {
   }
 });
 
-function lancerPartie(entree, creatures, pose) {
+function lancerPartie(entree, creatures, pose, cap) {
   const rendu = creerRendu(canvasVideo, canvas);
   let etat = nouvelEtat();
 
@@ -142,6 +150,15 @@ function lancerPartie(entree, creatures, pose) {
   let dernierePose = 0;
   let historiquePose = []; // dernières orientations estimées de l'animal suivi
   let lacetPose = null; // angle de la créature d'après la posture, null tant qu'inconnu
+  const canvasCap = document.createElement('canvas'); // découpe carrée autour de la voiture suivie
+  if (cap) {
+    canvasCap.width = cap.largeur;
+    canvasCap.height = cap.hauteur;
+  }
+  const ctxCap = canvasCap.getContext('2d', { willReadFrequently: true });
+  let dernierCap = 0;
+  let probasCap = null; // probabilités lissées des 8 secteurs de la voiture suivie
+  let secteursCap = []; // derniers secteurs dominants
   let cycleDetection = 0;
 
   const canvasFlux = document.createElement('canvas'); // image réduite en gris pour le flux optique
@@ -307,6 +324,28 @@ function lancerPartie(entree, creatures, pose) {
       .finally(() => { detectionEnCours = false; });
   }
 
+  // Cap de la voiture suivie : découpe carrée (grise hors écran) estimée par le modèle d'orientation;
+  // les probabilités lissées donnent l'angle de l'aliment.
+  function lancerCap(c, t) {
+    detectionEnCours = true;
+    dernierCap = t;
+    const suiviLancement = suivi;
+    const r = rectanglesDecoupe(decoupeCarree(cible), rendu.largeur, rendu.hauteur, canvasCap.width);
+    if (!r) { detectionEnCours = false; return; }
+    ctxCap.fillStyle = GRIS;
+    ctxCap.fillRect(0, 0, canvasCap.width, canvasCap.height);
+    dessinerVideo(ctxCap, c, r.source, r.dest);
+    estimerCap(canvasCap)
+      .then((probas) => {
+        if (suivi !== suiviLancement) return; // série terminée entre-temps
+        probasCap = lisserProbas(probasCap, probas);
+        secteursCap = [...secteursCap, probasCap.indexOf(Math.max(...probasCap))].slice(-3);
+        lacetPose = lacetAliment(probasCap);
+      })
+      .catch((e) => console.error(e))
+      .finally(() => { detectionEnCours = false; });
+  }
+
   function imageCourse() {
     const e = course.etat();
     boutonTir.disabled = e.phase !== 'fini' || allumageCamera;
@@ -319,11 +358,17 @@ function lancerPartie(entree, creatures, pose) {
     suivreImage(c);
     const lu = suivi.lire(t);
     cible = lu.actif ? lu.cible : null;
-    if (!detectionEnCours && t - derniereDetection >= INTERVALLE_DETECTION_MS) {
-      const posturable = pose && cible && !estVoiture(cible.classe) && !etat.issue && !creatures.lancerEnCours
+    // Aucune inférence pendant le lancer, l'explosion ou la fuite : tout le GPU va à l'animation ; le
+    // flux optique garde la cible pendant le lancer.
+    const animation = etat.issue || creatures.lancerEnCours;
+    if (creatures.lancerEnCours) suivi.prolonger(t);
+    if (!detectionEnCours && !animation && t - derniereDetection >= INTERVALLE_DETECTION_MS) {
+      const posturable = pose && cible && !estVoiture(cible.classe) 
         && classePose(cible.classe) >= 0;
       const delaiPose = estimationStable(historiquePose, ESTIMATIONS_POSE) ? INTERVALLE_POSE_STABLE_MS : INTERVALLE_POSE_MS;
+      const orientable = cap && cible && estVoiture(cible.classe);
       if (posturable && t - dernierePose >= delaiPose) lancerPose(c, t);
+      else if (orientable && t - dernierCap >= (capStable(secteursCap) ? INTERVALLE_CAP_STABLE_MS : INTERVALLE_CAP_MS)) lancerCap(c, t);
       else lancerDetection(c, t);
     }
 
@@ -334,6 +379,8 @@ function lancerPartie(entree, creatures, pose) {
     }
     if (!cible) {
       historiquePose = [];
+      probasCap = null;
+      secteursCap = [];
       lacetPose = null;
     }
     const visible = cible && etat.cibleVisible;

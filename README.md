@@ -66,6 +66,8 @@ contexte WebGL, le jeu affiche « Mémoire saturée, redémarrage… » et se re
 | `js/creatures.js` | créatures three.js : placement, mimiques, explosion, fuite, test de touche |
 | `js/posture.js` | orientation d'un animal d'après ses 20 points clés : profil, sens, dos (pur, testé) |
 | `js/pose.js` | yolo11n-pose via TensorFlow.js : estimation sur un carré autour de l'animal |
+| `js/cap.js` | cap d'une voiture : découpe, lissage, secteurs d'azimut → angle de l'aliment (pur, testé) |
+| `js/cap-modele.js` | modèle d'orientation (MobileNetV3-Small) via TensorFlow.js : 8 secteurs d'azimut |
 | `js/lancer.js` | main et tomate three.js : lancer en cloche vers le viseur, impact |
 | `js/sons.js` | bruitages Web Audio synthétisés |
 | `js/camera.js` | caméra arrière, relance de la lecture au retour sur la page |
@@ -102,11 +104,11 @@ version à leur prochaine ouverture.
 - TensorFlow.js 4.22.0 (`vendor/tf.min.js`), Apache-2.0.
 - three.js 0.170.0 (`vendor/three.module.min.js`, `GLTFLoader.js`, `BufferGeometryUtils.js`), MIT
   (`vendor/three-LICENSE.txt`).
+- Orientation des voitures : modèle MobileNetV3-Small du dépôt [OrientationVoiture](https://github.com/Sambutcher/OrientationVoiture),
+  distillé d'[Orient Anything](https://github.com/SpatialVision/Orient-Anything) (Wang et al. 2024, CC BY 4.0) sur des voitures de COCO 2017.
 - Créatures et aliments 3D : sources et licences à compléter.
 
 ## Idées pour plus tard
 
-- Orienter les créatures comme la cible (profil/face, regard). Essai avec RTMPose (posture
-  animale) sur la branche `avec-posture` : trop lourd pour l'iPhone SE (mémoire graphique, puis
-  plantage même en WebAssembly).
-- Orientation des voitures : aucun modèle libre et léger trouvé.
+- Reprendre la pose des membres de l'animal (pattes, museau) : essai de squelette abandonné (rendu
+  jugé moins bon que l'orientation seule).

@@ -96,6 +96,11 @@ export function creerSuivi({
       cible = { x: x - w / 2, y: y - h / 2, w, h, classe: cible.classe }; // espèce de la 1re vue
     },
 
+    // Pas de détection pendant un moment (lancer) : la cible suivie au flux optique reste valable.
+    prolonger(t) {
+      if (cible) derniereVue = t;
+    },
+
     // État courant à l'instant t.
     lire(t) {
       if (cible && t - derniereVue > persistanceMs) oublier();
