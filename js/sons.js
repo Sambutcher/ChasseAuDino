@@ -70,23 +70,53 @@ export function creerSons() {
       fetch(`sons/${cle}.wav`)
         .then((r) => r.arrayBuffer())
         .then((donnees) => new Promise((ok, ko) => ctx.decodeAudioData(donnees, ok, ko)))
-        .then((tampon) => { cris[cle] = tampon; })
+        .then((tampon) => { cris[cle] = tampon; aJouer(); })
         .catch((e) => { delete cris[cle]; console.error(e); });
     }
   }
-  function crier(cle) {
+  // Son en cours : un nouveau son coupe le précédent (fondu rapide) au lieu d'être ignoré.
+  let enCours = null;
+  function couper() {
+    if (!enCours) return;
+    const { src, g } = enCours;
+    enCours = null;
+    try {
+      g.gain.setTargetAtTime(0, ctx.currentTime, 0.015);
+      src.stop(ctx.currentTime + 0.1);
+    } catch (e) { /* déjà arrêté */ }
+  }
+  function crier(son) {
+    couper();
     const g = ctx.createGain();
     g.gain.value = 0.85;
     g.connect(ctx.destination);
     const src = ctx.createBufferSource();
-    src.buffer = cris[cle];
+    src.buffer = cris[son];
     src.connect(g);
+    src.onended = () => { if (enCours && enCours.src === src) enCours = null; };
     src.start();
+    enCours = { src, g };
   }
-  const DELAI_CRI_MS = 6000; // entre deux cris, pour ne pas saturer
-  let dernierCri = -Infinity;
 
-  const pret = () => ctx && ctx.state === 'running';
+  // L'audio d'iOS peut se suspendre (appel, changement d'application) : chaque son tente de le
+  // réveiller, et un son demandé avant la fin du chargement part dès que son tampon est prêt.
+  function pret() {
+    if (!ctx) return false;
+    if (ctx.state !== 'running') Promise.resolve(ctx.resume()).catch(() => {});
+    return true;
+  }
+  let enAttente = null; // { cle, hasard, t } : son demandé avant la fin du chargement
+  const ATTENTE_MAX_MS = 3000;
+  function aJouer() {
+    if (!enAttente) return;
+    const { cle, hasard, t } = enAttente;
+    if (performance.now() - t > ATTENTE_MAX_MS) { enAttente = null; return; }
+    const son = sonDe(cle, hasard);
+    if (!son) return;
+    enAttente = null;
+    crier(son);
+  }
+
   // Son d'une espèce : son cri, ou pour un aliment un moteur tiré au hasard parmi ceux chargés.
   function sonDe(cle, hasard) {
     if (ESPECES[cle] && estVoiture(ESPECES[cle].classe)) {
@@ -95,17 +125,21 @@ export function creerSons() {
     }
     return cris[cle] ? cle : null;
   }
+  function jouer(cle, hasard) {
+    if (!pret()) return false;
+    const son = sonDe(cle, hasard);
+    if (son) crier(son);
+    else enAttente = { cle, hasard, t: performance.now() };
+    return !!son;
+  }
 
   return {
     debloquer,
 
-    // Cri de l'animal (ou moteur de l'aliment) d'espèce `cle` à son apparition ; rien si le dernier
-    // est trop récent (une détection qui clignote le ferait répéter).
-    cri(cle, t = performance.now(), hasard = Math.random) {
-      const son = pret() && t - dernierCri >= DELAI_CRI_MS ? sonDe(cle, hasard) : null;
-      if (!son) return;
-      dernierCri = t;
-      crier(son);
+    // Cri de l'animal (ou moteur de l'aliment) d'espèce `cle`, à son apparition : toujours joué, en
+    // coupant le son précédent.
+    cri(cle, hasard = Math.random) {
+      jouer(cle, hasard);
     },
 
     lancer() {
@@ -131,13 +165,12 @@ export function creerSons() {
       }
     },
 
-    // Fuite : l'animal pousse son cri et l'aliment démarre en trombe (toujours, sans délai) ; à défaut
-    // d'enregistrement chargé, bruit synthétisé.
+    // Fuite : l'animal pousse son cri et l'aliment démarre en trombe (coupant le son précédent) ; à
+    // défaut d'enregistrement chargé, bruit synthétisé.
     fuite(ton, cle, hasard = Math.random) {
       if (!pret()) return;
       const son = sonDe(cle, hasard);
       if (son) {
-        dernierCri = performance.now();
         crier(son);
       } else if (ton === 'kawaii') {
         note('sine', 600, 1300, 0, 0.18, 0.25);

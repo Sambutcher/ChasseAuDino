@@ -171,11 +171,13 @@ function lancerPartie(entree, creatures, pose, cap) {
   // utilisateur, exigé par iOS) et donne une tomate.
   async function allerAuTir() {
     if (allumageCamera) return;
+    sons.debloquer(); // dans le geste utilisateur
     allumageCamera = true;
     boutonTir.disabled = true;
     erreurCamera.textContent = '';
     try {
       await demarrerCamera(video);
+      sons.debloquer(); // la caméra a pu suspendre l'audio (iOS) : on le réveille avant le premier cri
     } catch (e) {
       console.error(e);
       erreurCamera.textContent = `Caméra indisponible : ${e.message || e}`;
