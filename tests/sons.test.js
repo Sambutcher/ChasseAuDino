@@ -4,9 +4,9 @@ import { ESPECES } from '../js/especes.js';
 import { creerSons } from '../js/sons.js';
 
 // Faux Web Audio : compte les oscillateurs démarrés, accepte tous les branchements.
-function fauxAudio() {
+function fauxAudio(lus = []) {
   const compte = { oscillateurs: 0 };
-  globalThis.fetch = async () => ({ arrayBuffer: async () => new ArrayBuffer(8) });
+  globalThis.fetch = async (url) => ({ arrayBuffer: async () => Object.assign(new ArrayBuffer(8), { url }) });
   const parametre = () => ({
     value: 0,
     setValueAtTime() {},
@@ -26,15 +26,20 @@ function fauxAudio() {
     createOscillator() { compte.oscillateurs++; return noeud(); }
     createGain() { return noeud(); }
     createBiquadFilter() { return noeud(); }
-    createBufferSource() { compte.oscillateurs++; return noeud(); }
-    decodeAudioData(_, ok) { ok({ duration: 1 }); }
+    createBufferSource() {
+      compte.oscillateurs++;
+      const n = noeud();
+      Object.defineProperty(n, 'buffer', { set: (b) => lus.push(b.url) });
+      return n;
+    }
+    decodeAudioData(donnees, ok) { ok({ duration: 1, url: donnees.url }); }
     resume() {}
   }
   globalThis.window = { AudioContext: Contexte };
   return compte;
 }
 
-test('cris : un par animal, aucun pour un aliment, délai entre deux cris', async () => {
+test('cris : un par animal, un moteur par aliment, délai entre deux cris', async () => {
   const compte = fauxAudio();
   const sons = creerSons();
   sons.debloquer();
@@ -49,11 +54,24 @@ test('cris : un par animal, aucun pour un aliment, délai entre deux cris', asyn
   }
   const avant = compte.oscillateurs;
   sons.cri('burger', (t += 10000));
-  assert.equal(compte.oscillateurs, avant, 'pas de cri pour un aliment');
+  assert.ok(compte.oscillateurs > avant, 'un aliment démarre un moteur');
   sons.cri('vache', (t += 10000));
   const apres = compte.oscillateurs;
   sons.cri('chien', t + 1000);
   assert.equal(compte.oscillateurs, apres, 'trop tôt pour un autre cri');
+});
+
+test('moteurs : un aliment tire un moteur au hasard, tous différents possibles', async () => {
+  const lus = [];
+  const compte = fauxAudio(lus);
+  const sons = creerSons();
+  sons.debloquer();
+  await new Promise((r) => setTimeout(r, 10));
+  let t = 0;
+  for (const h of [0, 0.2, 0.4, 0.6, 0.8, 0.99]) sons.cri('sushi', (t += 10000), () => h);
+  assert.equal(new Set(lus).size, 6, `moteurs lus : ${[...new Set(lus)].join(', ')}`);
+  assert.ok(lus.every((u) => u.startsWith('sons/moteur-')));
+  assert.ok(compte.oscillateurs >= 6);
 });
 
 test('cris : rien tant que l\'audio n\'est pas débloqué', () => {

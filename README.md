@@ -115,6 +115,13 @@ version à leur prochaine ouverture.
   cheval : [hennissement](https://commons.wikimedia.org/wiki/File:Mares-Prefer-the-Voices-of-Highly-Fertile-Stallions-pone.0118468.s001.oga) (Lemasson et al., PLOS ONE, CC BY 4.0) ;
   alpaga : [Lamb bleating and its mother's response](https://commons.wikimedia.org/wiki/File:Lamb_bleating_and_its_mother%27s_response.flac) (Yosef Ben Melamed, CC BY-SA 4.0) ;
   vache : [Single Cow Moo](https://commons.wikimedia.org/wiki/File:Single_Cow_Moo.ogg) (MichaeltheFox8621, CC BY-SA 4.0).
+- Moteurs des aliments (`sons/moteur-*.wav`, montées en régime de 2 s extraites d'enregistrements « engine and exhaust sound », CC BY 3.0, Wikimedia Commons) :
+  [Plymouth Duster](https://commons.wikimedia.org/wiki/File:Plymouth_Duster_-_engine_and_exhaust_sound_(YouTube_FWzja7TuZiw).opus),
+  [Maserati GranCabrio](https://commons.wikimedia.org/wiki/File:Maserati_GranCabrio_-_engine_and_exhaust_sound_(YouTube_e3JISrkw2T0).opus),
+  [McLaren 675LT](https://commons.wikimedia.org/wiki/File:McLaren_675LT_-_engine_and_exhaust_sound_(YouTube_Uc0FP4UDuQ0).opus),
+  [Kia Ceed](https://commons.wikimedia.org/wiki/File:Kia_Ceed_-_engine_and_exhaust_sound_(YouTube_g1jq9DLf0l8).opus),
+  [Ford Thunderbird (1955)](https://commons.wikimedia.org/wiki/File:Ford_Thunderbird_(1955)_-_engine_and_exhaust_sound_(YouTube_KRMCr2o90FY).opus),
+  [Austin Healey](https://commons.wikimedia.org/wiki/File:Austin_Healey_-_engine_and_exhaust_sound_(YouTube_Sry9AwH-3F0).opus).
 - Aliments 3D : sources et licences à compléter.
 
 ## Idées pour plus tard

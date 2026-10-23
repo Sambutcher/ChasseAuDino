@@ -1,6 +1,8 @@
-// Bruitages synthétisés en Web Audio ; seuls les cris des animaux sont des enregistrements. Deux tons : 'kawaii' (aigu, joyeux)
-// et 'mechant' (grave, grondant). iOS exige debloquer() dans un geste utilisateur ;
+// Bruitages synthétisés en Web Audio ; seuls les cris des animaux et les moteurs des voitures sont des
+// enregistrements. Deux tons : 'kawaii' (aigu, joyeux) et 'mechant' (grave, grondant). iOS exige debloquer() dans un geste utilisateur ;
 // le bouton silencieux de l'iPhone coupe aussi ces sons.
+
+import { ESPECES, estVoiture } from './especes.js';
 
 export function creerSons() {
   let ctx = null;
@@ -55,12 +57,14 @@ export function creerSons() {
     src.stop(t + duree + 0.05);
   }
 
-  // Cris des animaux : vrais enregistrements (sons/<clé d'espèce>.wav, voir le README pour les
-  // crédits), décodés une fois après le déblocage de l'audio. null : en cours de chargement.
-  const ESPECES_CRI = ['chat', 'chien', 'cheval', 'mouton', 'vache'];
+  // Cris des animaux (sons/<clé d'espèce>.wav) et moteurs des voitures (sons/moteur-<nom>.wav, un
+  // tiré au hasard par aliment) : vrais enregistrements, voir le README pour les crédits, décodés
+  // une fois après le déblocage de l'audio. null : en cours de chargement.
+  const MOTEURS = ['plymouth', 'maserati', 'mclaren', 'kia', 'thunderbird', 'austin'].map((m) => `moteur-${m}`);
+  const SONS = ['chat', 'chien', 'cheval', 'mouton', 'vache', ...MOTEURS];
   const cris = {};
   function precharger() {
-    for (const cle of ESPECES_CRI) {
+    for (const cle of SONS) {
       if (cle in cris) continue;
       cris[cle] = null;
       fetch(`sons/${cle}.wav`)
@@ -83,17 +87,25 @@ export function creerSons() {
   let dernierCri = -Infinity;
 
   const pret = () => ctx && ctx.state === 'running';
-  const aCri = (cle) => !!cris[cle];
+  // Son d'une espèce : son cri, ou pour un aliment un moteur tiré au hasard parmi ceux chargés.
+  function sonDe(cle, hasard) {
+    if (ESPECES[cle] && estVoiture(ESPECES[cle].classe)) {
+      const prets = MOTEURS.filter((m) => cris[m]);
+      return prets.length ? prets[Math.floor(hasard() * prets.length)] : null;
+    }
+    return cris[cle] ? cle : null;
+  }
 
   return {
     debloquer,
 
-    // Cri de l'animal d'espèce `cle` à son apparition ; rien pour un aliment, ni si le dernier cri
+    // Cri de l'animal (ou moteur de l'aliment) d'espèce `cle` à son apparition ; rien si le dernier
     // est trop récent (une détection qui clignote le ferait répéter).
-    cri(cle, t = performance.now()) {
-      if (!pret() || !aCri(cle) || t - dernierCri < DELAI_CRI_MS) return;
+    cri(cle, t = performance.now(), hasard = Math.random) {
+      const son = pret() && t - dernierCri >= DELAI_CRI_MS ? sonDe(cle, hasard) : null;
+      if (!son) return;
       dernierCri = t;
-      crier(cle);
+      crier(son);
     },
 
     lancer() {
@@ -119,12 +131,14 @@ export function creerSons() {
       }
     },
 
-    // Fuite : l'animal pousse son cri (toujours, sans délai) ; un aliment fait son bruit de fuite.
-    fuite(ton, cle) {
+    // Fuite : l'animal pousse son cri et l'aliment démarre en trombe (toujours, sans délai) ; à défaut
+    // d'enregistrement chargé, bruit synthétisé.
+    fuite(ton, cle, hasard = Math.random) {
       if (!pret()) return;
-      if (aCri(cle)) {
+      const son = sonDe(cle, hasard);
+      if (son) {
         dernierCri = performance.now();
-        crier(cle);
+        crier(son);
       } else if (ton === 'kawaii') {
         note('sine', 600, 1300, 0, 0.18, 0.25);
         note('sine', 700, 1500, 0.2, 0.18, 0.25);
