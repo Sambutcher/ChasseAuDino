@@ -60,7 +60,7 @@ export function creerSons() {
   // Cris des animaux (sons/<clé d'espèce>.wav) et moteurs des voitures (sons/moteur-<nom>.wav, un
   // tiré au hasard par aliment) : vrais enregistrements, voir le README pour les crédits, décodés
   // une fois après le déblocage de l'audio. null : en cours de chargement.
-  const MOTEURS = ['plymouth', 'maserati', 'mclaren', 'kia', 'thunderbird', 'austin'].map((m) => `moteur-${m}`);
+  const MOTEURS = ['plymouth', 'thunderbird', 'austin'].map((m) => `moteur-${m}`);
   const SONS = ['chat', 'chien', 'cheval', 'mouton', 'vache', ...MOTEURS];
   const cris = {};
   function precharger() {

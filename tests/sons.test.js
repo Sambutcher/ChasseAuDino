@@ -68,10 +68,10 @@ test('moteurs : un aliment tire un moteur au hasard, tous différents possibles'
   sons.debloquer();
   await new Promise((r) => setTimeout(r, 10));
   let t = 0;
-  for (const h of [0, 0.2, 0.4, 0.6, 0.8, 0.99]) sons.cri('sushi', (t += 10000), () => h);
-  assert.equal(new Set(lus).size, 6, `moteurs lus : ${[...new Set(lus)].join(', ')}`);
+  for (const h of [0, 0.5, 0.99]) sons.cri('sushi', (t += 10000), () => h);
+  assert.equal(new Set(lus).size, 3, `moteurs lus : ${[...new Set(lus)].join(', ')}`);
   assert.ok(lus.every((u) => u.startsWith('sons/moteur-')));
-  assert.ok(compte.oscillateurs >= 6);
+  assert.ok(compte.oscillateurs >= 3);
 });
 
 test('cris : rien tant que l\'audio n\'est pas débloqué', () => {
