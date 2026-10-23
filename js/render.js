@@ -44,8 +44,8 @@ export function creerRendu(canvasVideo, canvas) {
     ctx.closePath();
   }
 
-  // Viseur discret au centre de l'écran : deux anneaux fins et translucides qui « respirent »,
-  // ombre légère du point d'impact et, si la main attend, arc pointillé du lancer prévu (chemin(u)
+  // Viseur discret au centre de l'écran : deux anneaux fins et translucides qui « respirent » et,
+  // si la main attend, arc pointillé du lancer prévu (chemin(u)
   // → point écran, u de 0 à 1) dont les points avancent vers la cible. t : horloge en ms.
   function viseur(t, chemin) {
     const cx = largeur / 2;
@@ -68,12 +68,6 @@ export function creerRendu(canvasVideo, canvas) {
         ctx.fill();
       }
     }
-
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + r * 0.12, r * 0.45, r * 0.14, 0, 0, 2 * Math.PI);
-    ctx.fill();
 
     ctx.shadowBlur = 3;
     ctx.lineWidth = 1.6;
