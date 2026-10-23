@@ -8,8 +8,9 @@ Dans le notebook (Settings : Accelerator = GPU, Internet = On ; Add Input : le d
     !git clone https://github.com/Sambutcher/ChasseAuxBebetes
     !python ChasseAuxBebetes/tools/entrainer_pose.py
 
-Sortie dans /kaggle/working : pose-tfjs.zip (modèle TF.js, à décompresser dans models/pose/ du dépôt),
-best.pt (poids PyTorch) et resultats.txt (métriques). Hors Kaggle :
+Sortie dans /kaggle/working : best.pt (poids PyTorch), resultats.txt (métriques) et, si l'export
+réussit, pose-tfjs.zip (modèle TF.js, à décompresser dans models/pose/ du dépôt). Sinon on convertit
+best.pt avec .github/workflows/export-pose.yml. Hors Kaggle :
 python3 tools/entrainer_pose.py <dossier du dataset> <dossier de travail>
 """
 import shutil
@@ -59,11 +60,15 @@ def main():
         f"points mAP50 {metriques.pose.map50:.3f}  mAP50-95 {metriques.pose.map:.3f}\n")
     print((travail / "resultats.txt").read_text())
 
-    # Export TF.js en float16 (poids ~2x plus petits), entrée carrée 256×256.
-    YOLO(str(meilleur)).export(format="tfjs", imgsz=TAILLE, half=True)
-    export = next((meilleur.parent).glob("best_web_model"))
-    archive = shutil.make_archive(str(travail / "pose-tfjs"), "zip", export)
-    print("modèle TF.js :", archive)
+    # Export TF.js en float16 (poids ~2x plus petits), entrée carrée 256×256. Sur Kaggle (ultralytics
+    # récent, Python 3.13) il échoue souvent : best.pt suffit alors, la conversion se fait avec
+    # .github/workflows/export-pose.yml (voir tools/export_pose.sh).
+    try:
+        YOLO(str(meilleur)).export(format="tfjs", imgsz=TAILLE, half=True)
+        archive = shutil.make_archive(str(travail / "pose-tfjs"), "zip", meilleur.parent / "best_web_model")
+        print("modèle TF.js :", archive)
+    except Exception as erreur:  # noqa: BLE001
+        print(f"Export TF.js impossible ici ({erreur}). Récupérer best.pt et lancer export-pose.yml.")
 
 
 if __name__ == "__main__":

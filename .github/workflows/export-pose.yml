@@ -1,0 +1,25 @@
+# Conversion du modèle de pose (pose/best.pt, entraîné sur Kaggle) en TensorFlow.js.
+# Résultat : artefact « pose-tfjs » à copier dans models/pose/.
+# Lancement manuel : gh workflow run export-pose.yml -R Sambutcher/ChasseAuxBebetes
+name: Export du modèle de pose
+
+on:
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      # < 8.4 : les versions suivantes remplacent l'export TF.js par LiteRT.
+      - name: Installer ultralytics (PyTorch CPU)
+        run: pip install "ultralytics<8.4" --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+      - name: Exporter
+        run: tools/export_pose.sh pose/best.pt 256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pose-tfjs
+          path: models/pose/
