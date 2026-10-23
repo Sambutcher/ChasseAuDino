@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLASSES_POSE, classePose, decoderPose, orientation, combiner, estimationStable, lacetDe, zonePose, versZone } from '../js/posture.js';
+import { CLASSES_POSE, classePose, decoderPose, inclinaisonTete, teteBaissee, orientation, combiner, estimationStable, lacetDe, zonePose, versZone } from '../js/posture.js';
 import { ESPECES } from '../js/especes.js';
 
 // Points clés d'un animal : seuls les indices donnés sont surs (x, y).
@@ -98,4 +98,26 @@ test('estimation stable : trois estimations concordantes seulement', () => {
   assert.ok(!estimationStable([o(0.8), o(0.8, -1), o(0.8)]), 'sens différent');
   assert.ok(!estimationStable([o(0.2), o(0.5), o(0.8)]), 'profil qui change');
   assert.ok(!estimationStable([o(0.1), o(0.1, 1, true), o(0.1)]), 'dos différent');
+});
+
+const GARROT = 18;
+test('inclinaison de la tête : levée, dans le prolongement, baissée, quel que soit le sens', () => {
+  const profil = { profil: 1, sens: 1 };
+  const droite = (nezY) => inclinaisonTete(pose([[QUEUE, 20, 50], [GARROT, 100, 50], [NEZ, 150, nezY]]), profil);
+  assert.ok(Math.abs(droite(50)) < 0.01, 'dans le prolongement du dos');
+  assert.ok(droite(20) < -0.4, 'levée');
+  assert.ok(droite(110) > 0.8, 'baissée');
+  const gauche = inclinaisonTete(pose([[QUEUE, 180, 50], [GARROT, 100, 50], [NEZ, 50, 110]]), { profil: 1, sens: -1 });
+  assert.ok(Math.abs(gauche - droite(110)) < 0.01, 'symétrique');
+  assert.ok(inclinaisonTete(pose([[QUEUE, 20], [GARROT, 100], [NEZ, 150, 110]]), { profil: 0.3, sens: 1 }) === null, 'pas de profil');
+  assert.equal(inclinaisonTete(pose([[QUEUE, 20], [NEZ, 150, 110]]), profil), null, 'garrot manquant');
+});
+
+test('tête baissée : hystérésis et inconnue sans mesures', () => {
+  assert.equal(teteBaissee([1, 1, 1], false), true);
+  assert.equal(teteBaissee([0.6, 0.6, 0.6], false), false, 'sous le seuil pour baisser');
+  assert.equal(teteBaissee([0.6, 0.6, 0.6], true), true, 'au-dessus du seuil pour relever');
+  assert.equal(teteBaissee([0.2, 0.3, 0.2], true), false);
+  assert.equal(teteBaissee([null, 1.2, null], false), false, 'trop peu de mesures : état conservé');
+  assert.equal(teteBaissee([null, null, null], true), true);
 });

@@ -13,19 +13,22 @@
   `avec-posture` = essais de posture RTMPose (orientation des créatures), abandonnés : saturait
   la mémoire de l'iPhone SE en WebGL comme en WebAssembly. Espèces désignées par une clé
   (`'vache'`, `'mage'`…).
-- Animaux COCO détectés par le YOLO11n existant (aucun réentraînement), remplacés par une créature 3D
-  kawaii (table `ESPECES` de `js/especes.js`) : chat→chaton, chien→chiot, cheval→licorne,
-  mouton→panda, vache→dragon. Maillages statiques (sans squelette) allégés à ~8–20 k triangles et
-  texture 512 px par `tools/alleger_modeles.py` (venv hors dépôt : numpy, meshoptimizer, pillow ;
-  sources dans `Téléchargements/`, ignoré par git), animés **en code** par `js/animation.js`
-  (respiration, saut/tortillement, fuite en sautillant). Avant du modèle = +Z.
+- Animaux COCO détectés par le YOLO11n existant (aucun réentraînement), remplacés par un animal 3D **riggé**
+  (table `ESPECES` de `js/especes.js`) : chat→renard, chien→shiba, cheval→cheval, mouton→alpaga, vache→vache. Source :
+  pack Quaternius « Ultimate Animated Animals » (CC0, glTF, ~2 000 triangles, sans texture), recolorié en pastel par matériau et
+  allégé (clips utiles seulement, pistes d'échelle retirées) par `tools/preparer_animaux.py` (stdlib ; sources dans
+  `Téléchargements/`, ignoré par git, ou Google Drive du pack). Clips joués par `js/clips.js` (AnimationMixer, fondus) :
+  `Idle` en attente, mimiques `Idle_2`/`Gallop_Jump`/`Idle_HitReact1`, `Gallop` en fuite, `Idle_Headlow`/`Eating` quand la
+  tête est baissée ; oreilles et queue frémissent en plus. Pas de clip assis/couché dans le pack. Avant du modèle = +Z.
+  Les aliments (statiques) restent animés en code par `js/animation.js`. Les boîtes englobantes des `SkinnedMesh` sont en
+  cache : `viderBoites` (creatures.js) avant toute mesure ou tir.
 - **Posture des animaux (1.4.0)** : `yolo11n-pose` entraîné sur Animal Pose (Kaggle,
   `tools/preparer_pose.py` + `tools/entrainer_pose.py`, poids dans `pose/best.pt`, converti en TF.js par
   le workflow `export-pose.yml` dans `models/pose/`, entrée carrée 256 px, ~6 Mo). `js/pose.js` l'exécute
   sur un carré autour de l'animal suivi toutes les 300 ms (une seule inférence à la fois avec la
   détection) ; `js/posture.js` (pur) déduit profil, sens et dos des points clés, le lacet est passé à
-  `creatures.montrer`. Sans modèle ou sans estimation : créature tournée vers le centre. Pas de
-  repli par ratio de boîte.
+  `creatures.montrer`, ainsi que « tête baissée » (`inclinaisonTete` + `teteBaissee`, hystérésis) qui choisit le clip de brout.
+  Sans modèle ou sans estimation : créature tournée vers le centre. Pas de repli par ratio de boîte.
 - **Cap des voitures (1.5.0)** : modèle `models/cap/` copié du dépôt `Sambutcher/OrientationVoiture` (MobileNetV3-Small
   128 px distillé d'Orient Anything, CC BY 4.0 ; 8 secteurs d'azimut, ~3 Mo). `js/cap-modele.js` l'exécute sur une découpe
   carrée (plus grand côté × 1,2, grise hors écran, `js/cap.js` pur) de la voiture suivie toutes les 600 ms (une seule

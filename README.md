@@ -5,17 +5,18 @@ les change en **créatures 3D**. Une seule tomate à lancer : touchée, la créa
 
 | Animal | Créature | Ton |
 |---|---|---|
-| vache | dragon | kawaii |
-| cheval | licorne | kawaii |
-| chat | chaton | kawaii |
-| chien | chiot | kawaii |
-| mouton | panda | kawaii |
+| vache | vache pastel | kawaii |
+| cheval | cheval pastel | kawaii |
+| chat | renard pastel | kawaii |
+| chien | shiba pastel | kawaii |
+| mouton | alpaga pastel | kawaii |
 
 Les **voitures** deviennent un aliment tiré au hasard (burger, croissant, sushi, barquette de
 frites ou éclair).
 
-Les créatures sautillent, font coucou (animations en code, `js/animation.js`) et explosent en
-étoiles colorées.
+Les animaux sont des modèles à squelette : ils respirent, bougent oreilles et queue, bondissent,
+broutent quand l'animal filmé a la tête baissée (clips du modèle, `js/clips.js`), galopent pour
+fuir et explosent en étoiles colorées. Les aliments, statiques, sont animés en code (`js/animation.js`).
 
 PWA installable, jouable **hors ligne**, pensée d'abord pour iPhone (iPhone SE 3ᵉ gén.).
 Inspirée de [Street Biathlon](https://github.com/Sambutcher/StreetBiathlon), dont elle reprend le socle.
@@ -106,7 +107,9 @@ version à leur prochaine ouverture.
   (`vendor/three-LICENSE.txt`).
 - Orientation des voitures : modèle MobileNetV3-Small du dépôt [OrientationVoiture](https://github.com/Sambutcher/OrientationVoiture),
   distillé d'[Orient Anything](https://github.com/SpatialVision/Orient-Anything) (Wang et al. 2024, CC BY 4.0) sur des voitures de COCO 2017.
-- Créatures et aliments 3D : sources et licences à compléter.
+- Animaux 3D : pack « Ultimate Animated Animals » de [Quaternius](https://quaternius.com/packs/ultimateanimatedanimals.html),
+  CC0 (domaine public). Couleurs pastel et allègement des clips par `tools/preparer_animaux.py`.
+- Aliments 3D : sources et licences à compléter.
 
 ## Idées pour plus tard
 

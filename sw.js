@@ -1,7 +1,7 @@
 // Service worker : tout le jeu est mis en cache à l'installation pour jouer hors ligne.
 // Changer VERSION à chaque mise en ligne (et dans index.html, vérifié par tests/pwa.test.js),
 // sinon les téléphones gardent l'ancienne version.
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 const CACHE = `chasse-au-dino-${VERSION}`;
 
 const FICHIERS = [
@@ -29,6 +29,7 @@ const FICHIERS = [
   'js/especes.js',
   'js/creatures.js',
   'js/animation.js',
+  'js/clips.js',
   'js/posture.js',
   'js/pose.js',
   'js/cap.js',
@@ -44,16 +45,16 @@ const FICHIERS = [
   'models/pose/group1-shard2of2.bin',
   'models/cap/model.json',
   'models/cap/group1-shard1of1.bin',
-  'models/creatures/licorne.glb',
-  'models/creatures/chiot.glb',
-  'models/creatures/chaton.glb',
-  'models/creatures/panda.glb',
+  'models/creatures/renard.glb',
+  'models/creatures/shiba.glb',
+  'models/creatures/cheval.glb',
+  'models/creatures/alpaga.glb',
+  'models/creatures/vache.glb',
   'models/creatures/burger.glb',
   'models/creatures/croissant.glb',
   'models/creatures/eclair.glb',
   'models/creatures/frites.glb',
   'models/creatures/sushi.glb',
-  'models/creatures/dragon.glb',
 ];
 
 self.addEventListener('install', (ev) => {

@@ -7,6 +7,7 @@ import { ESPECES } from './especes.js';
 import { lisserVers } from './geometry.js';
 import { creerLancer } from './lancer.js';
 import { creerAnimation, pose, VARIANTES_HUMEUR } from './animation.js';
+import { creerClips } from './clips.js';
 
 export const DUREE_EXPLOSION = 1.8; // s
 // Lissage de l'affichage : la boîte suivie avance par à-coups (flux optique en pixels entiers
@@ -86,11 +87,13 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   // Créature posée sur la boîte écran de la cible : pieds en bas, hauteur de la boîte, largeur
   // bornée, tournée selon `lacetVoulu` (posture de l'animal, js/posture.js) ou, sans lui,
   // légèrement vers le centre de l'écran.
-  function montrer(cle, boite, t = performance.now(), lacetVoulu = null) {
+  // `teteBaissee` : l'animal a la tête basse (js/posture.js), la créature broute.
+  function montrer(cle, boite, t = performance.now(), lacetVoulu = null, teteBaissee = false) {
     if (mode === 'fuite' || mode === 'explosion') return;
     const m = choisir(cle, t);
     if (!m) return;
     mode = 'suivi';
+    m.teteBaissee(teteBaissee);
     const x = boite.x + boite.w / 2;
     const y = boite.y + boite.h;
     const versCentre = Math.max(-1, Math.min(1, (largeur / 2 - x) / (largeur / 2)));
@@ -137,12 +140,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   function touche(point) {
     if (mode !== 'suivi' || !courante) return false;
     scene.updateMatrixWorld(true);
-    courante.pivot.traverse((o) => {
-      if (o.isSkinnedMesh) {
-        o.boundingSphere = null; // recalculés dans la pose courante
-        o.boundingBox = null;
-      }
-    });
+    viderBoites(courante.pivot); // recalculées dans la pose courante
     const d = TOLERANCE_TIR;
     const decalages = [[0, 0], [d, 0], [-d, 0], [0, d], [0, -d]];
     return decalages.some(([dx, dy]) => {
@@ -221,9 +219,10 @@ function delaiHumeur(espece) {
   return (espece.ton === 'kawaii' ? 2500 : 3500) + Math.random() * 2500;
 }
 
-// Modèle normalisé : hauteur 1, origine au pied, animé en code
-// (js/animation.js) autour des pieds. Interface : demarrer(), mimique(i) parmi `mimiques`,
-// fuir(), maj(dt), arreter().
+// Modèle normalisé (mesuré dans la pose d'attente) : hauteur 1, origine au pied. Un animal riggé
+// joue les clips de son modèle (js/clips.js) ; un aliment statique est animé en code autour des
+// pieds (js/animation.js). Interface : demarrer(), mimique(i) parmi `mimiques`, fuir(), maj(dt),
+// arreter(), teteBaissee(oui).
 export function preparer(gltf, espece) {
   const modele = gltf.scene;
   modele.traverse((o) => {
@@ -231,6 +230,12 @@ export function preparer(gltf, espece) {
   });
   // Aliment trop plat : on l'épaissit (hauteur et profondeur) avant de le mesurer.
   if (espece.epaisseur) modele.scale.set(1, espece.epaisseur, espece.epaisseur);
+  const clips = espece.clips && gltf.animations.length ? creerClips(modele, gltf.animations, espece.clips) : null;
+  if (clips) {
+    clips.demarrer();
+    modele.updateMatrixWorld(true);
+    viderBoites(modele);
+  }
   const bb = new THREE.Box3().setFromObject(modele);
   const taille = bb.getSize(new THREE.Vector3());
   modele.position.sub(new THREE.Vector3(
@@ -247,10 +252,24 @@ export function preparer(gltf, espece) {
   pivot.add(corps);
   pivot.visible = false;
 
+  if (clips) viderBoites(modele); // la pose mesurée n'est pas celle des images suivantes
   const ratioFace = taille.x / taille.y; // largeur vue de face, en hauteurs
   const ratioProfil = taille.z / taille.y; // largeur vue de profil
   // Un aliment plat et large (croissant) saute en proportion de sa largeur, pas de sa hauteur.
   const amplitude = Math.min(3, Math.max(1, ratioFace, ratioProfil));
+  if (clips) {
+    return {
+      espece, pivot, ratioFace, ratioProfil,
+      demarrer: () => clips.demarrer(),
+      arreter: () => clips.arreter(),
+      clips, // pour les tests
+      mimiques: clips.mimiques,
+      mimique: (i) => clips.mimique(i),
+      fuir: () => clips.fuir(),
+      teteBaissee: (oui) => clips.teteBaissee(oui),
+      maj: (dt) => clips.maj(dt),
+    };
+  }
   const animation = creerAnimation();
   const poser = (p) => {
     corps.position.y = p.dy * amplitude;
@@ -268,8 +287,20 @@ export function preparer(gltf, espece) {
     mimiques: VARIANTES_HUMEUR,
     mimique: (i) => animation.humeur(i),
     fuir: () => animation.fuite(),
+    teteBaissee: () => {},
     maj: (dt) => poser(animation.maj(dt)),
   };
+}
+
+// Les boîtes englobantes d'un maillage à squelette sont mises en cache : on les recalcule dans la
+// pose courante.
+function viderBoites(racine) {
+  racine.traverse((o) => {
+    if (o.isSkinnedMesh) {
+      o.boundingSphere = null;
+      o.boundingBox = null;
+    }
+  });
 }
 
 // Explosion : la créature éclate en morceaux de ses propres triangles (dans la pose du moment),

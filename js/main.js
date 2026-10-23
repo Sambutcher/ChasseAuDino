@@ -9,7 +9,7 @@ import { chargerDetecteur, detecter } from './detector.js';
 import { chargerPose, estimerPose } from './pose.js';
 import { chargerCap, estimerCap } from './cap-modele.js';
 import { GRIS, capStable, decoupeCarree, lacetAliment, lisserProbas, rectanglesDecoupe } from './cap.js';
-import { classePose, combiner, estimationStable, lacetDe, orientation, zonePose } from './posture.js';
+import { classePose, combiner, estimationStable, inclinaisonTete, lacetDe, orientation, teteBaissee, zonePose } from './posture.js';
 import { creerRendu } from './render.js';
 import { creerCreatures } from './creatures.js';
 import { creerSons } from './sons.js';
@@ -150,6 +150,8 @@ function lancerPartie(entree, creatures, pose, cap) {
   let dernierePose = 0;
   let historiquePose = []; // dernières orientations estimées de l'animal suivi
   let lacetPose = null; // angle de la créature d'après la posture, null tant qu'inconnu
+  let inclinaisons = []; // dernières inclinaisons de la tête de l'animal suivi
+  let teteBasse = false; // l'animal a la tête baissée : la créature broute
   const canvasCap = document.createElement('canvas'); // découpe carrée autour de la voiture suivie
   if (cap) {
     canvasCap.width = cap.largeur;
@@ -316,7 +318,10 @@ function lancerPartie(entree, creatures, pose, cap) {
     estimerPose(canvasPose, classePose(cible.classe))
       .then((detection) => {
         if (suivi !== suiviLancement) return; // série terminée entre-temps
-        historiquePose = [...historiquePose, detection ? orientation(detection) : null].slice(-ESTIMATIONS_POSE);
+        const vue = detection ? orientation(detection) : null;
+        historiquePose = [...historiquePose, vue].slice(-ESTIMATIONS_POSE);
+        inclinaisons = [...inclinaisons, vue ? inclinaisonTete(detection, vue) : null].slice(-ESTIMATIONS_POSE);
+        teteBasse = teteBaissee(inclinaisons, teteBasse);
         const o = combiner(historiquePose);
         lacetPose = o ? lacetDe(o) : null;
       })
@@ -379,6 +384,8 @@ function lancerPartie(entree, creatures, pose, cap) {
     }
     if (!cible) {
       historiquePose = [];
+      inclinaisons = [];
+      teteBasse = false;
       probasCap = null;
       secteursCap = [];
       lacetPose = null;
@@ -388,7 +395,7 @@ function lancerPartie(entree, creatures, pose, cap) {
     rendu.effacer();
     rendu.video(video, c);
     if (!etat.issue) {
-      if (visible) creatures.montrer(etat.espece, cible, t, lacetPose);
+      if (visible) creatures.montrer(etat.espece, cible, t, lacetPose, teteBasse);
       else creatures.cacher();
     }
     creatures.dessiner(t);

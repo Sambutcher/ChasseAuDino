@@ -16,7 +16,7 @@ function clipsDu(fichier) {
 test('cibles : voiture et les 5 animaux COCO', () => {
   assert.deepEqual(CLASSES, [2, 15, 16, 17, 18, 19]);
   const animaux = ['chat', 'chien', 'cheval', 'mouton', 'vache'];
-  assert.deepEqual(animaux.map((a) => ESPECES[a].nom), ['chaton', 'chiot', 'licorne', 'panda', 'dragon']);
+  assert.deepEqual(animaux.map((a) => ESPECES[a].nom), ['renard', 'shiba', 'cheval', 'alpaga', 'vache']);
   assert.deepEqual(animaux.map((a) => ESPECES[a].ton), ['kawaii', 'kawaii', 'kawaii', 'kawaii', 'kawaii']);
 });
 
@@ -33,8 +33,19 @@ test('especeDe : animal par sa classe, voiture par un aliment tiré au hasard', 
   assert.equal(tires.size, aliments.length, 'tous les aliments sortent');
 });
 
-test('les modèles sont statiques : aucune animation dans les .glb', () => {
-  for (const e of Object.values(ESPECES)) assert.deepEqual(clipsDu(e.fichier), [], `${e.nom} : animée en code`);
+test('animaux riggés : tous les clips voulus existent ; aliments statiques : aucune animation', () => {
+  for (const e of Object.values(ESPECES)) {
+    const clips = clipsDu(e.fichier);
+    if (!e.clips) {
+      assert.deepEqual(clips, [], `${e.nom} : animé en code`);
+      continue;
+    }
+    const a = (nom) => clips.some((c) => c.toLowerCase() === nom.toLowerCase());
+    assert.ok(a(e.clips.attente), `${e.nom} : attente`);
+    assert.ok(a(e.clips.fuite), `${e.nom} : fuite`);
+    assert.ok(e.clips.mimiques.every(a), `${e.nom} : mimiques`);
+    assert.ok(e.clips.tete.some(a), `${e.nom} : tête baissée`);
+  }
 });
 
 test('filtrerEspece : toutes les boîtes, ou celles de la classe verrouillée', () => {
@@ -44,8 +55,8 @@ test('filtrerEspece : toutes les boîtes, ou celles de la classe verrouillée', 
 });
 
 test('messageIssue accorde le genre', () => {
-  assert.equal(messageIssue(ESPECES.cheval, 'enfuie'), 'La licorne s\'est enfuie !');
-  assert.equal(messageIssue(ESPECES.mouton, 'enfuie'), 'Le panda s\'est enfui !');
+  assert.equal(messageIssue(ESPECES.cheval, 'enfuie'), 'Le cheval s\'est enfui !');
+  assert.equal(messageIssue(ESPECES.mouton, 'enfuie'), 'L\'alpaga s\'est enfui !');
   assert.equal(messageIssue(ESPECES.burger, 'explosee'), 'Le burger a explosé !');
   assert.equal(messageIssue(ESPECES.frites, 'enfuie'), 'La barquette de frites s\'est enfuie !');
 });

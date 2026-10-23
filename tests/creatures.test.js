@@ -26,12 +26,12 @@ for (const espece of Object.values(ESPECES)) {
     assert.ok(Math.abs(bb.min.x + bb.max.x) < 0.01, 'centré horizontalement');
     assert.ok(m.ratioFace > 0.2 && m.ratioFace < 6, `largeur de face ${m.ratioFace}`);
     assert.ok(m.ratioProfil > 0.3 && m.ratioProfil < 3, `largeur de profil ${m.ratioProfil}`);
-    assert.equal(m.mimiques, VARIANTES_HUMEUR);
+    assert.equal(m.mimiques, espece.clips ? espece.clips.mimiques.length : VARIANTES_HUMEUR);
   });
 }
 
-test('créatures statiques : pose en code autour des pieds, retour au neutre à l\'arrêt', async () => {
-  const m = await charger(ESPECES.cheval);
+test('aliments statiques : pose en code autour des pieds, retour au neutre à l\'arrêt', async () => {
+  const m = await charger(ESPECES.burger);
   m.demarrer();
   m.fuir();
   m.maj(0.1);
@@ -42,6 +42,41 @@ test('créatures statiques : pose en code autour des pieds, retour au neutre à 
   m.pivot.updateMatrixWorld(true);
   const repos = new THREE.Box3().setFromObject(m.pivot);
   assert.ok(Math.abs(repos.min.y) < 0.01 && Math.abs(repos.max.y - 1) < 0.01);
+});
+
+// Les maillages à squelette n'ont de boîte à jour qu'après mise à jour des os (faite au rendu).
+function pieds(m) {
+  m.pivot.updateMatrixWorld(true);
+  m.pivot.traverse((o) => {
+    if (o.isSkinnedMesh) {
+      o.skeleton.update();
+      o.boundingBox = null;
+    }
+  });
+  return new THREE.Box3().setFromObject(m.pivot).min.y;
+}
+
+test('animaux riggés : clips joués, mimique puis retour à l\'attente, fuite, tête baissée', async () => {
+  const m = await charger(ESPECES.cheval);
+  m.demarrer();
+  assert.equal(m.clips.clip, 'Idle');
+  m.mimique(1);
+  assert.equal(m.clips.clip, 'Gallop_Jump');
+  for (let i = 0; i < 60; i++) m.maj(0.05); // plus long que le saut
+  assert.equal(m.clips.clip, 'Idle', 'retour à l\'attente');
+  m.teteBaissee(true);
+  assert.equal(m.clips.clip, 'Idle_Headlow');
+  m.mimique(0);
+  m.teteBaissee(false);
+  assert.equal(m.clips.clip, 'Idle_2', 'une mimique en cours n\'est pas coupée');
+  m.fuir();
+  assert.equal(m.clips.clip, 'Gallop');
+  m.mimique(0);
+  assert.equal(m.clips.clip, 'Gallop', 'pas de mimique en fuite');
+  for (let i = 0; i < 40; i++) m.maj(0.05);
+  assert.ok(pieds(m) > -0.15, 'les pieds restent près du sol pendant le galop');
+  m.arreter();
+  assert.equal(m.clips.clip, 'Idle');
 });
 
 for (const cle of ['vache', 'chien', 'croissant']) {

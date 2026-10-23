@@ -8,18 +8,26 @@ const VOITURE = 2; // classe COCO « car »
 // classe : classe COCO de la cible. cible : ce que la caméra voit (« vache », « voiture »).
 // ton : 'kawaii' (sautille, explose en confettis) ou 'mechant' (grogne, explose en flammes).
 // epaisseur : facteur d'épaississement (hauteur et profondeur) d'un modèle trop plat.
-// Les modèles sont statiques : js/animation.js les anime en code.
+// clips : clips d'animation des animaux riggés (js/clips.js) ; les aliments, statiques, n'en ont pas
+// et js/animation.js les anime en code.
+const CLIPS = {
+  attente: 'Idle',
+  mimiques: ['Idle_2', 'Gallop_Jump', 'Idle_HitReact1'],
+  fuite: 'Gallop',
+  tete: ['Idle_Headlow', 'Eating'], // tête baissée, quand l'animal broute
+};
 const creature = (classe, cible, nom, fichier, extra = {}) => ({
   classe, cible, nom, fichier: `models/creatures/${fichier}.glb`, ton: 'kawaii', ...extra,
 });
+const animal = (classe, cible, nom, fichier, extra = {}) => creature(classe, cible, nom, fichier, { clips: CLIPS, ...extra });
 const aliment = (nom, fichier, extra = {}) => creature(VOITURE, 'voiture', nom, fichier, extra);
 
 export const ESPECES = {
-  chat: creature(15, 'chat', 'chaton', 'chaton'),
-  chien: creature(16, 'chien', 'chiot', 'chiot'),
-  cheval: creature(17, 'cheval', 'licorne', 'licorne', { feminin: true }),
-  mouton: creature(18, 'mouton', 'panda', 'panda'),
-  vache: creature(19, 'vache', 'dragon', 'dragon'),
+  chat: animal(15, 'chat', 'renard', 'renard'),
+  chien: animal(16, 'chien', 'shiba', 'shiba'),
+  cheval: animal(17, 'cheval', 'cheval', 'cheval'),
+  mouton: animal(18, 'mouton', 'alpaga', 'alpaga'),
+  vache: animal(19, 'vache', 'vache', 'vache', { feminin: true }),
   burger: aliment('burger', 'burger'),
   croissant: aliment('croissant', 'croissant'),
   eclair: aliment('éclair', 'eclair', { epaisseur: 1.8 }),
@@ -46,8 +54,8 @@ export function filtrerEspece(boites, classe) {
   return classe === null ? boites : boites.filter((b) => b.classe === classe);
 }
 
-// Message affiché après le tir : « Le dragon a explosé ! », « La licorne s'est enfuie ! ».
+// Message affiché après le tir : « La vache a explosé ! », « L'alpaga s'est enfui ! ».
 export function messageIssue(espece, issue) {
-  const sujet = `${espece.feminin ? 'La' : 'Le'} ${espece.nom}`;
+  const sujet = /^[aeiouyéèê]/i.test(espece.nom) ? `L'${espece.nom}` : `${espece.feminin ? 'La' : 'Le'} ${espece.nom}`;
   return issue === 'explosee' ? `${sujet} a explosé !` : `${sujet} s'est enfui${espece.feminin ? 'e' : ''} !`;
 }

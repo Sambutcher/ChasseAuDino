@@ -13,6 +13,7 @@ const OEIL_G = 0;
 const OEIL_D = 1;
 const NEZ = 2;
 const GORGE = 17;
+const GARROT = 18;
 const QUEUE = 19;
 const TETE = [NEZ, GORGE]; // devant du corps
 const ARRIERE = [QUEUE, 7, 8, 11, 12, 15, 16]; // queue, coudes, genoux et pattes arrière
@@ -62,6 +63,29 @@ export function orientation(detection) {
   const d = points[OEIL_D];
   const dos = profil < 0.5 && g.c >= SEUIL_POINT && d.c >= SEUIL_POINT && g.x < d.x;
   return { profil, sens: ecart >= 0 ? 1 : -1, dos };
+}
+
+// Inclinaison de la tête sur le corps d'un animal de profil, en radians (positive vers le bas, nulle
+// museau dans le prolongement du dos), ou null si le museau, le garrot ou la queue manquent ou si
+// l'animal n'est pas de profil. `sens` : +1 s'il regarde vers la droite de l'image, -1 vers la gauche.
+export function inclinaisonTete({ points }, { profil, sens }) {
+  const [nez, garrot, queue] = [points[NEZ], points[GARROT], points[QUEUE]];
+  if (profil < 0.6 || [nez, garrot, queue].some((p) => p.c < SEUIL_POINT)) return null;
+  const dos = Math.atan2(garrot.y - queue.y, (garrot.x - queue.x) * sens);
+  const tete = Math.atan2(nez.y - garrot.y, (nez.x - garrot.x) * sens);
+  const ecart = tete - dos;
+  return Math.atan2(Math.sin(ecart), Math.cos(ecart));
+}
+
+// Tête baissée (l'animal broute) d'après les dernières inclinaisons : seuils différents pour baisser
+// et relever, afin que la créature ne clignote pas. `avant` : état précédent.
+export const TETE_BAISSEE = 0.8; // rad
+export const TETE_RELEVEE = 0.45;
+export function teteBaissee(inclinaisons, avant = false) {
+  const vues = inclinaisons.filter((v) => v !== null);
+  if (vues.length < 2) return avant;
+  const moyenne = vues.reduce((s, v) => s + v, 0) / vues.length;
+  return moyenne > (avant ? TETE_RELEVEE : TETE_BAISSEE);
 }
 
 // Moyenne des dernières orientations : profil moyen, sens et dos par vote majoritaire.
