@@ -1,5 +1,6 @@
 // État du jeu, sans dépendance au navigateur : chaque fonction renvoie un nouvel état.
-// Une partie alterne course (caméra éteinte, 100 m pour débloquer le tir) et tir (1 cartouche).
+// Une partie alterne course (caméra éteinte, 100 m pour débloquer le tir) et tir (1 tomate à lancer :
+// « cartouches » compte les tomates).
 // Pendant le tir, l'espèce de la créature est verrouillée tant que l'animal reste en vue.
 
 export const CARTOUCHES = 1;

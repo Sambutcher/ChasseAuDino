@@ -1,6 +1,6 @@
-// Boucle du jeu : une partie alterne course (GPS, caméra éteinte) et tir (caméra, détection des
-// animaux et des voitures par YOLO, créature 3D suivie par flux optique). La logique pure vit
-// dans game.js, especes.js, couleur.js, course.js, tracker.js, flow.js et geometry.js ; ce
+// Boucle du jeu : une partie alterne course (GPS, caméra éteinte) et tir, un lancer de tomate
+// (caméra, détection des animaux et des voitures par YOLO, créature 3D suivie par flux optique).
+// La logique pure vit dans game.js, especes.js, couleur.js, course.js, tracker.js, flow.js et geometry.js ; ce
 // fichier relie le navigateur (caméra, GPS, canvas, three.js, sons) à cette logique.
 import { demarrerCamera, arreterCamera, relancerAuRetour } from './camera.js';
 import { suivrePosition, garderEcranAllume } from './position.js';
@@ -13,7 +13,7 @@ import { ESPECES, especeDe, estVoiture, filtrerEspece, messageIssue } from './es
 import { couleurVoiture, majorite, zoneCarrosserie } from './couleur.js';
 import { creerSuivi } from './tracker.js';
 import { versGris, estimerDecalage } from './flow.js';
-import { nouvelEtat, debloquerTir, finSerie, serieTerminee, voirCreature, quitterCreature, tirer } from './game.js';
+import { nouvelEtat, debloquerTir, finSerie, voirCreature, quitterCreature, tirer } from './game.js';
 import { cadrage, letterbox, versEcran, plusProcheDe, zoneDetection, placementVideo } from './geometry.js';
 
 const URL_MODELE = 'models/yolo11n/model.json';
@@ -23,7 +23,7 @@ const INTERVALLE_DETECTION_MS = 80;
 const LARGEUR_FLUX = 120; // largeur de l'image réduite pour le flux optique
 const RAYON_FLUX = 12; // déplacement max mesuré par trame, en pixels de l'image réduite
 const DISTANCE_COURSE = 100; // mètres à vol d'oiseau pour débloquer le tir
-const DELAI_FIN_SERIE_MS = 2200; // temps de l'explosion ou de la fuite après le tir
+const DELAI_FIN_SERIE_MS = 2200; // temps de l'explosion ou de la fuite après l'impact
 const DUREE_FLASH_MS = 250;
 
 const accueil = document.getElementById('accueil');
@@ -97,7 +97,7 @@ function lancerPartie(entree, creatures) {
   let suivi = creerSuivi();
   let cible = null; // boîte écran de la cible quand elle est visible
   let allumageCamera = false;
-  let finSerieA = null; // instant du tir
+  let finSerieA = null; // instant de l'impact
   relancerAuRetour(video);
 
   // Mémoire graphique saturée : iOS retire un contexte WebGL (détection arrêtée, image réduite).
@@ -136,7 +136,7 @@ function lancerPartie(entree, creatures) {
   let votesCouleur = [];
 
   // « Position de tir » (après 100 m) ou « Skip » (sans courir) : rallume la caméra (geste
-  // utilisateur, exigé par iOS) et charge la carabine.
+  // utilisateur, exigé par iOS) et donne une tomate.
   async function allerAuTir() {
     if (allumageCamera) return;
     allumageCamera = true;
@@ -175,17 +175,23 @@ function lancerPartie(entree, creatures) {
     pasDeTir.hidden = false;
   }
 
-  // Tap = l'unique tir, au centre de l'écran (croix de visée) : la créature explose ou s'enfuit.
+  // Tap = l'unique lancer : la tomate part en cloche vers le viseur (centre de l'écran). À
+  // l'impact, la créature qui s'y trouve explose ; sinon elle s'enfuit. Si l'animal a disparu
+  // pendant le vol, la tomate est perdue sans compter : la main en reprend une.
   canvas.addEventListener('pointerdown', (ev) => {
     ev.preventDefault();
     sons.debloquer(); // iOS peut suspendre l'audio à l'allumage de la caméra
-    if (!cible || !etat.cibleVisible) return;
+    if (!cible || !etat.cibleVisible || etat.issue || etat.cartouches === 0) return;
     const viseur = { x: rendu.largeur / 2, y: rendu.hauteur / 2 };
+    if (creatures.lancerTomate(viseur, () => impact(viseur))) sons.lancer();
+  });
+
+  function impact(viseur) {
     const r = tirer(etat, creatures.touche(viseur));
-    if (!r.resultat) return;
+    if (!r.resultat) return false;
     etat = r.etat;
     const { ton } = ESPECES[etat.espece];
-    sons.tir();
+    sons.splat();
     if (r.resultat === 'touche') {
       creatures.exploser();
       sons.explosion(ton);
@@ -195,7 +201,8 @@ function lancerPartie(entree, creatures) {
     }
     dernierTir = { resultat: r.resultat, t: performance.now() };
     finSerieA = performance.now();
-  });
+    return r.resultat === 'touche';
+  }
 
   // Dessine la zone `zone` de l'écran (vue de la caméra) dans le rectangle `cible` d'un canvas :
   // vidéo entière placée par placementVideo, jamais découpée (bug du quart d'image sur iOS).
@@ -310,8 +317,8 @@ function lancerPartie(entree, creatures) {
       else creatures.cacher();
     }
     creatures.dessiner(t);
+    creatures.preparerTomate(etat.cartouches > 0);
     if (visible && !etat.issue) rendu.viseur();
-    if (visible || serieTerminee(etat)) rendu.cartouches(etat.cartouches);
     if (etat.issue) rendu.message(messageIssue(ESPECES[etat.espece], etat.issue));
 
     const age = t - dernierTir.t;

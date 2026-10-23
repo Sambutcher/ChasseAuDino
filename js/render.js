@@ -1,6 +1,5 @@
 // Dessin 2D plein écran (coordonnées en points CSS), sur deux canvas qui encadrent celui des
-// créatures 3D : la vidéo dessous, l'interface (viseur, cartouche, messages, course) dessus.
-import { CARTOUCHES } from './game.js';
+// créatures 3D : la vidéo dessous, l'interface (viseur, messages, course) dessus.
 import { placementVideo } from './geometry.js';
 
 export function creerRendu(canvasVideo, canvas) {
@@ -65,33 +64,6 @@ export function creerRendu(canvasVideo, canvas) {
     ctx.arc(cx, cy, 2, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff';
     ctx.fill();
-    ctx.restore();
-  }
-
-  function cartouches(restantes) {
-    const w = 18;
-    const h = 56;
-    const y = margeHaut + 16;
-    ctx.save();
-    for (let i = 0; i < CARTOUCHES; i++) {
-      const x = 16 + i * (w + 10);
-      const pleine = i < restantes;
-      // Douille
-      ctx.fillStyle = pleine ? '#d4a017' : 'rgba(255,255,255,0.15)';
-      ctx.strokeStyle = pleine ? '#7a5a00' : 'rgba(255,255,255,0.6)';
-      ctx.lineWidth = 1.5;
-      ctx.fillRect(x, y + h * 0.35, w, h * 0.65);
-      ctx.strokeRect(x, y + h * 0.35, w, h * 0.65);
-      // Ogive
-      ctx.beginPath();
-      ctx.moveTo(x, y + h * 0.35);
-      ctx.quadraticCurveTo(x, y, x + w / 2, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + h * 0.35);
-      ctx.closePath();
-      ctx.fillStyle = pleine ? '#b87333' : 'rgba(255,255,255,0.15)';
-      ctx.fill();
-      ctx.stroke();
-    }
     ctx.restore();
   }
 
@@ -160,6 +132,6 @@ export function creerRendu(canvasVideo, canvas) {
   return {
     get largeur() { return largeur; },
     get hauteur() { return hauteur; },
-    video, effacer, viseur, cartouches, message, flash, course,
+    video, effacer, viseur, message, flash, course,
   };
 }

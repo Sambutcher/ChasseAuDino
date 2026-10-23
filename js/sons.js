@@ -59,10 +59,15 @@ export function creerSons() {
   return {
     debloquer,
 
-    tir() {
+    lancer() {
       if (!pret()) return;
-      bruit('highpass', 2000, 800, 0, 0.12, 0.5);
-      note('square', 220, 60, 0, 0.08, 0.15);
+      bruit('bandpass', 400, 1800, 0.12, 0.3, 0.35); // fouet de la main
+    },
+
+    splat() {
+      if (!pret()) return;
+      bruit('lowpass', 900, 150, 0, 0.25, 0.8); // tomate écrasée
+      note('sine', 180, 60, 0, 0.15, 0.3);
     },
 
     explosion(ton) {

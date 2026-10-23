@@ -5,6 +5,7 @@ import * as THREE from '../vendor/three.module.min.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { ESPECES, trouverClip } from './especes.js';
 import { lisserVers } from './geometry.js';
+import { creerLancer } from './lancer.js';
 
 export const DUREE_EXPLOSION = 1.8; // s
 // Lissage de l'affichage : la boîte suivie avance par à-coups (flux optique en pixels entiers
@@ -14,7 +15,7 @@ const TAU_TAILLE = 0.3; // s
 const TAU_LACET = 0.25; // s : la créature pivote en douceur quand elle traverse l'écran
 const SAUT = 1.5; // écart (en hauteurs de créature) au-delà duquel on se recale d'un coup
 const TRIANGLES_PAR_ECLAT = 4;
-const TOLERANCE_TIR = 8; // px : un tir qui frôle la silhouette compte
+const TOLERANCE_TIR = 8; // px : une tomate qui frôle la silhouette compte
 const VITESSE_FUITE = 1.2; // largeurs d'écran par seconde
 
 const PALETTES = {
@@ -58,6 +59,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   }));
 
   const textures = { etoile: texture(dessinerEtoile), rond: texture(dessinerRond) };
+  const lancer = creerLancer(scene); // main et tomate
 
   let courante = null; // modèle affiché
   let mode = 'cache'; // 'suivi' | 'fuite' | 'explosion' | 'cache'
@@ -128,7 +130,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
     mode = 'cache';
   }
 
-  // Le viseur (point écran) touche-t-il la silhouette de la créature ?
+  // La tomate arrivée au viseur (point écran) touche-t-elle la silhouette de la créature ?
   const rayon = new THREE.Raycaster();
   const dirRayon = new THREE.Vector3(0, 0, -1);
   function touche(point) {
@@ -195,6 +197,7 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
   function dessiner(t) {
     const dt = tPrec === null ? 0 : Math.min(0.1, (t - tPrec) / 1000);
     tPrec = t;
+    lancer.maj(dt, largeur, hauteur); // avant la créature : l'impact peut la faire exploser
     if (courante) {
       courante.mixer.update(dt);
       humeur(t);
@@ -204,13 +207,17 @@ export async function creerCreatures(canvas, { base = '', quandHumeur = () => {}
       explosion.liberer();
       explosion = null;
     }
-    const visible = (courante && courante.pivot.visible) || explosion;
+    const visible = (courante && courante.pivot.visible) || explosion || lancer.visible;
     if (!visible && !aEffacer) return;
     renderer.render(scene, camera);
     aEffacer = !!visible;
   }
 
-  return { montrer, cacher, touche, exploser, fuir, dessiner };
+  return {
+    montrer, cacher, touche, exploser, fuir, dessiner,
+    preparerTomate: lancer.preparer, lancerTomate: lancer.lancer,
+    get lancerEnCours() { return lancer.enCours; },
+  };
 }
 
 function delaiHumeur(espece) {
