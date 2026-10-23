@@ -32,7 +32,7 @@ Inspirée de [Street Biathlon](https://github.com/Sambutcher/StreetBiathlon), do
 
 ## Jouer
 
-1. Ouvrir https://sambutcher.github.io/ChasseAuDino/ dans Safari.
+1. Ouvrir https://sambutcher.github.io/ChasseAuxBebetes/ dans Safari.
 2. Partager → **Sur l'écran d'accueil** (une première ouverture en ligne met tout en cache).
 3. Lancer, **Démarrer**, autoriser la localisation, puis la caméra au premier « Position de tir ».
 

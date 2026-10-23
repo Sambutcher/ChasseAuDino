@@ -1,4 +1,4 @@
-# Chasse aux bébêtes (dépôt ChasseAuDino) — notes pour Claude
+# Chasse aux bébêtes (dépôt ChasseAuxBebetes, ex-ChasseAuDino) — notes pour Claude
 
 - Dérivé de Street Biathlon (`~/Code/street-biathlon`) : même socle (course GPS, caméra, détection
   YOLO11n, flux optique, suivi, PWA). Un correctif du socle vaut souvent pour les deux projets.
@@ -37,6 +37,7 @@
 - Dev sur iPhone : `python3 tools/serve.py` (HTTPS auto-signé, IP locale 192.168.1.147:8443) ;
   tester sur Pages en **navigation privée** pour éviter le cache hors ligne.
 - Mise en ligne : GitHub Pages sur la branche `v1-stable-sans-posture`
-  (https://sambutcher.github.io/ChasseAuDino/), publication automatique à chaque push.
+  (https://sambutcher.github.io/ChasseAuxBebetes/), publication automatique à chaque push.
+  L'ancienne adresse …/ChasseAuDino/ ne redirige pas (dépôt renommé le 2026-10-23).
 - Ne pas tester les pages dans Chromium : Samuel teste lui-même (navigateur, iPhone).
 - Langue du code et des textes : français.
